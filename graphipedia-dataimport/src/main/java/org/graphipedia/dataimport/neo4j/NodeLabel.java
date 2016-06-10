@@ -19,61 +19,30 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport;
+package org.graphipedia.dataimport.neo4j;
 
-import java.util.logging.Logger;
+import org.neo4j.graphdb.Label;
 
 /**
- * Tracks the progress of a task.
+ * Labels of the nodes in the Neo4j database.
  *
  */
-public class ProgressCounter {
+public enum NodeLabel implements Label {
 	
 	/**
-	 * The logger where the progress is recorded.
+	 * Label associated to a node corresponding to a Wikipedia article 
+	 * (page in the main namespace).
 	 */
-	private Logger logger;
-
+	Article,
+	
 	/**
-	 * Constant for thousand. 
+	 * Label associated to a node corresponding to a Wikipedia redirect page. 
 	 */
-    private static final int THOUSAND = 1000;
-    //private static final int SMALL_STEP = 1 * THOUSAND;
-    
-    /**
-     * Constant for the step of the progress.
-     */
-    private static final int BIG_STEP = 50 * THOUSAND;
-
-    /**
-     * Raw count.
-     */
-    private int count = 0;
-    
-    /**
-     * Creates a new {@code ProgressCounter}.
-     * @param logger The logger where the progress is recorded.
-     */
-    public ProgressCounter(Logger logger) {
-    	this.logger = logger;
-    }
-
-    /**
-     * Returns the raw count.
-     * @return The raw count.
-     */
-    public int getCount() {
-        return count;
-    }
-
-    /**
-     * Increments the raw count and records the progress to the logger
-     * if enough progress is made. 
-     */
-    public void increment() {
-        count++;
-        if (count % BIG_STEP == 0) 
-            logger.info(count / THOUSAND +"k");
-    }
-
+	Redirect,
+	
+	/**
+	 * Label associated to a node corresponding to a Wikipedia
+	 * category.
+	 */
+	Category 
 }

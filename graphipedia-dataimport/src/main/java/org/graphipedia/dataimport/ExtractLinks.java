@@ -21,45 +21,88 @@
 //
 package org.graphipedia.dataimport;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
+import java.util.logging.Logger;
 
 import javax.xml.stream.XMLOutputFactory;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.apache.commons.compress.compressors.CompressorOutputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.codehaus.stax2.XMLOutputFactory2;
 
-public class ExtractLinks {
+/**
+ * This thread parses the XML file containing a Wikipedia edition in a specific language and creates an 
+ * intermediate XML file with all the links between Wikipedia pages. 
+ *
+ */
+public class ExtractLinks extends Thread {
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 2) {
-            System.out.println("USAGE: ExtractLinks <input-file> <output-file>");
-            System.exit(255);
-        }
-        ExtractLinks self = new ExtractLinks();
-        self.extract(args[0], args[1]);
-    }
+	/**
+	 * The name of the temporary file that is created by this thread and used as input to the thread that imports the
+	 * Wikipedia graph to Neo4j.
+	 */
+	public static final String TEMPORARY_LINK_FILE = "temporary-link-file.xml.bz2";
 
-    private void extract(String inputFile, String outputFile) throws IOException, XMLStreamException {
-        System.out.println("Parsing pages and extracting links...");
-        
-        long startTime = System.currentTimeMillis();
-        XMLOutputFactory outputFactory = XMLOutputFactory2.newInstance();
-        
-        XMLStreamWriter writer = outputFactory.createXMLStreamWriter(new FileOutputStream(outputFile), "UTF-8");
-        writer.writeStartDocument();
-        writer.writeStartElement("d");
-        
-        LinkExtractor linkExtractor = new LinkExtractor(writer);
-        linkExtractor.parse(inputFile);
+	/**
+	 * The logger of this class.
+	 */
+	private Logger logger; 
 
-        writer.writeEndElement();
-        writer.writeEndDocument();
-        writer.close();
-        
-        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        System.out.printf("\n%d pages parsed in %d seconds.\n", linkExtractor.getPageCount(), elapsedSeconds);
-    }
+	/**
+	 * The settings of the program.
+	 */
+	private DataImportSettings settings;
 
+	/**
+	 * The code of the language of the Wikipedia edition being currently imported (e.g., en).
+	 */
+	private String language;
+
+	/**
+	 * Creates a new thread to extract a specific Wikipedia language edition.
+	 * @param settings The general settings of Graphipedia.
+	 * @param language The code of the language of the Wikipedia edition being imported. 
+	 */
+	public ExtractLinks(DataImportSettings settings, String language) {
+		this.settings = settings;
+		this.language = language;
+		this.logger = LoggerFactory.createLogger("Link Extractor (" + this.language.toUpperCase() + ")");
+	}
+
+	@Override
+	public void run() {
+		logger.info("Parsing pages and extracting links...");
+		long startTime = System.currentTimeMillis();
+		XMLOutputFactory outputFactory = XMLOutputFactory2.newInstance();
+		File outputFile = new File(settings.wikipediaEditionDirectory(language), TEMPORARY_LINK_FILE); 
+
+		try {
+			FileOutputStream fout = new FileOutputStream(outputFile.getAbsolutePath());
+		    BufferedOutputStream bos = new BufferedOutputStream(fout);
+		    CompressorOutputStream output = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, bos);
+		    XMLStreamWriter writer = outputFactory.createXMLStreamWriter(output, "UTF-8");
+			writer.writeStartDocument();
+			writer.writeStartElement("d");
+
+			LinkExtractor linkExtractor = new LinkExtractor(writer, logger, settings, language);
+			linkExtractor.parse(settings.getWikipediaXmlFile(language).getAbsolutePath());
+
+			writer.writeEndElement();
+			writer.writeEndDocument();
+			output.close();
+			fout.close();
+			bos.close();
+			writer.close();
+			long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
+			logger.info(String.format("%d pages parsed in %d seconds.\n", linkExtractor.getPageCount(), elapsedSeconds));
+		}
+		catch(Exception e) {
+			logger.severe("Error while parsing the XML file ");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+	}
 }

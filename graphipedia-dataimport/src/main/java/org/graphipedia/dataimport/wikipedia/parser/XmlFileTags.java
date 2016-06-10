@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,8 +19,43 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
+package org.graphipedia.dataimport.wikipedia.parser;
 
-import org.neo4j.graphdb.RelationshipType;
+/**
+ * Enumerates the tags in the XML file containing a Wikipedia language edition 
+ * that include information to extract.
+ *
+ */
+public enum XmlFileTags {
+	
+	/**
+	 * Tag that identifies the information about a Wikipedia page.
+	 */
+	page,
+	
+	/**
+	 * Tag that identifies the title of a Wikipedia page.
+	 */
+	title,
+	
+	/**
+	 * Tag that identifies the text of a Wikipedia page.
+	 */
+	text,
+	
+	/**
+	 * Tag that identifies the identifier of a Wikipedia page.
+	 */
+	id,
+	
+	/**
+	 * Tag that identifies the Wikipedia page to which a page redirects.
+	 */
+	redirect,
+	
+	/**
+	 * Tag that identifies the information on a namespace.
+	 */
+	namespace
 
-public enum WikiRelationship implements RelationshipType { Link }
+}

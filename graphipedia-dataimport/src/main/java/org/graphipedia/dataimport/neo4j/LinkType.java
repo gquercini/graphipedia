@@ -19,61 +19,39 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport;
+package org.graphipedia.dataimport.neo4j;
 
-import java.util.logging.Logger;
+import org.neo4j.graphdb.RelationshipType;
 
 /**
- * Tracks the progress of a task.
+ * Enumerates the types of the links between Wikipedia pages.
  *
  */
-public class ProgressCounter {
+public enum LinkType implements RelationshipType { 
 	
 	/**
-	 * The logger where the progress is recorded.
+	 * Link between two pages of the same Wikipedia language edition. 
 	 */
-	private Logger logger;
-
+	link,
+	
 	/**
-	 * Constant for thousand. 
+	 * A cross-language link between two pages covering the same topic in two different 
+	 * language editions.
 	 */
-    private static final int THOUSAND = 1000;
-    //private static final int SMALL_STEP = 1 * THOUSAND;
-    
-    /**
-     * Constant for the step of the progress.
-     */
-    private static final int BIG_STEP = 50 * THOUSAND;
-
-    /**
-     * Raw count.
-     */
-    private int count = 0;
-    
-    /**
-     * Creates a new {@code ProgressCounter}.
-     * @param logger The logger where the progress is recorded.
-     */
-    public ProgressCounter(Logger logger) {
-    	this.logger = logger;
-    }
-
-    /**
-     * Returns the raw count.
-     * @return The raw count.
-     */
-    public int getCount() {
-        return count;
-    }
-
-    /**
-     * Increments the raw count and records the progress to the logger
-     * if enough progress is made. 
-     */
-    public void increment() {
-        count++;
-        if (count % BIG_STEP == 0) 
-            logger.info(count / THOUSAND +"k");
-    }
-
+	crosslink,
+	
+	/**
+	 * A redirect link
+	 */
+	redirect,
+	
+	/**
+	 * A link between two pages, of which the source is an article and the target page is a category.
+	 */
+	belong,
+	
+	/**
+	 * A link between two categories, of which the target is the parent of the source.
+	 */
+	child
 }

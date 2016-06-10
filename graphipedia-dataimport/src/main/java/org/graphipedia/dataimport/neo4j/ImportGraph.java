@@ -21,57 +21,108 @@
 //
 package org.graphipedia.dataimport.neo4j;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
+import org.graphipedia.dataimport.ExtractLinks;
+import org.graphipedia.dataimport.DataImportSettings;
+import org.graphipedia.dataimport.LoggerFactory;
+import org.graphipedia.dataimport.wikipedia.Page;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class ImportGraph {
-
+/**
+ * This thread imports a Wikipedia language edition as a graph into a Neo4j database.
+ * The input to this thread is the temporary link file created by the thread {@link ExtractLinks}.  
+ *
+ */
+public class ImportGraph extends Thread {
+	
+	/**
+	 * The logger of this class.
+	 */
+	private Logger logger; 
+    
+   
+    /**
+     * The code of the language of the Wikipedia edition being imported.
+     */
+    private String language;
+    
+    /**
+     * The temporary link file created by the thread {@link ExtractLinks}.
+     */
+    private File temporaryLinkFile;
+    
+    /**
+	 * The Neo4j object that is used to quickly add nodes and links to a graph.
+	 */
     private final BatchInserter inserter;
-    private final Map<String, Long> inMemoryIndex;
+    
+    /**
+     * An index of the nodes of the graph.
+     */
+    private final Map<String, Page> inMemoryIndex;
 
-    public ImportGraph(String dataDir) {
-        inserter = BatchInserters.inserter(dataDir);
-        inserter.createDeferredSchemaIndex(WikiLabel.Page).on("title").create();
-        inMemoryIndex = new HashMap<String, Long>();
+    /**
+     * Creates a new thread.
+     * 
+     * @param inserter The Neo4j object that is used to quickly add nodes and links to a graph.
+     * @param settings The settings of Graphipedia.
+     * @param language The code of the language of the Wikipedia edition being imported.
+     */
+    public ImportGraph(BatchInserter inserter, DataImportSettings settings, String language) {
+    	this.language = language;
+    	this.inserter = inserter;
+        inMemoryIndex = new HashMap<String, Page>();
+        this.logger = LoggerFactory.createLogger("Graph import [" + this.language.toUpperCase() + "]");
+        this.temporaryLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractLinks.TEMPORARY_LINK_FILE);
     }
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 2) {
-            System.out.println("USAGE: ImportGraph <input-file> <data-dir>");
-            System.exit(255);
-        }
-        String inputFile = args[0];
-        String dataDir = args[1];
-        ImportGraph importer = new ImportGraph(dataDir);
-        importer.createNodes(inputFile);
-        importer.createRelationships(inputFile);
-        importer.finish();
+    @Override
+    public void run() {
+        try {
+			createNodes();
+		} catch (Exception e) {
+			logger.severe("Error while creating the nodes " + e.getMessage());
+			e.printStackTrace();
+			System.exit(-1);
+		}
+        try {
+			createLinks();
+		} catch (Exception e) {
+			logger.severe("Error while creating the links " + e.getMessage());
+			e.printStackTrace();
+			System.exit(-1);
+		}
+       // this.temporaryLinkFile.delete();
     }
 
-    public void createNodes(String fileName) throws Exception {
-        System.out.println("Importing pages...");
-        NodeCreator nodeCreator = new NodeCreator(inserter, inMemoryIndex);
+    /**
+     * Creates the nodes of the graph. Each node corresponds to a Wikipedia page.
+     * @throws Exception when something goes wrong.
+     */
+    public void createNodes() throws Exception {
+        logger.info("Importing pages...");
+        NodeCreator nodeCreator = new NodeCreator(inserter, inMemoryIndex, language, logger);
         long startTime = System.currentTimeMillis();
-        nodeCreator.parse(fileName);
+        nodeCreator.parse(temporaryLinkFile.getAbsolutePath());
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        System.out.printf("\n%d pages imported in %d seconds.\n", nodeCreator.getPageCount(), elapsedSeconds);
+        logger.info(String.format("%d pages imported in %d seconds.\n", nodeCreator.getPageCount(), elapsedSeconds));
     }
 
-    public void createRelationships(String fileName) throws Exception {
-        System.out.println("Importing links...");
-        RelationshipCreator relationshipCreator = new RelationshipCreator(inserter, inMemoryIndex);
+    /**
+     * Creates the links of the graph.
+     * @throws Exception when something goes wrong.
+     */
+    public void createLinks() throws Exception {
+    	logger.info("Importing links...");
+        LinkCreator linkCreator = new LinkCreator(inserter, inMemoryIndex, logger);
         long startTime = System.currentTimeMillis();
-        relationshipCreator.parse(fileName);
+        linkCreator.parse(temporaryLinkFile.getAbsolutePath());
         long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        System.out.printf("\n%d links imported in %d seconds; %d broken links ignored\n",
-                relationshipCreator.getLinkCount(), elapsedSeconds, relationshipCreator.getBadLinkCount());
-    }
-
-    public void finish() {
-        inserter.shutdown();
+        logger.info(String.format("%d links imported in %d seconds\n", linkCreator.getLinkCount(), elapsedSeconds));
     }
 
 }

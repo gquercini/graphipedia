@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,8 +19,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
-
-import org.neo4j.graphdb.Label;
-
-public enum WikiLabel implements Label { Page }
+/**
+ * This package contains the classes necessary to parse the files of 
+ * a Wikipedia language edition.
+ */
+package org.graphipedia.dataimport.wikipedia.parser;
