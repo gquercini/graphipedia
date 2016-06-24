@@ -29,9 +29,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
 
-import org.graphipedia.CheckPoint;
 import org.graphipedia.GraphipediaSettings;
-import org.graphipedia.dataimport.ReadableTime;
+import org.graphipedia.progress.CheckPoint;
+import org.graphipedia.progress.ReadableTime;
 
 /**
  * A Wikipedia language edition

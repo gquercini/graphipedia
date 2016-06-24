@@ -30,8 +30,10 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import org.graphipedia.dataimport.ImportWikipedia;
-import org.graphipedia.dataimport.ReadableTime;
 import org.graphipedia.download.WikipediaEdition;
+import org.graphipedia.progress.CheckPoint;
+import org.graphipedia.progress.LoggerFactory;
+import org.graphipedia.progress.ReadableTime;
 
 /**
  * Main class of Graphipedia.
