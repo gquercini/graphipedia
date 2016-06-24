@@ -161,7 +161,7 @@ public class WikipediaEdition {
 			logger.info("Already downloaded");
 			return true;
 		}
-		if ( targetDirectory.exists() ) {
+		if ( !targetDirectory.exists() ) {
 			if ( !targetDirectory.mkdir() ) {
 				logger.severe("Cannot create directory " + targetDirectory.getAbsolutePath());
 				return false;
@@ -213,6 +213,14 @@ public class WikipediaEdition {
 	 */
 	private void downloadFile(CheckPoint checkpoint, Logger logger, DumpFile sourceFile, File targetFile, String message) {
 		if ( !checkpoint.isDownloadedFile(targetFile.getAbsolutePath()) ) {
+			if ( !targetFile.exists() )
+				try {
+					targetFile.createNewFile();
+				} catch (IOException e1) {
+					logger.severe("Could not create file " + targetFile.getAbsolutePath());
+					e1.printStackTrace();
+					System.exit(-1);
+				}
 			long start = System.currentTimeMillis();
 			logger.info(message);
 			URL url = null;

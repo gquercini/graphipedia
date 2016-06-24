@@ -135,6 +135,7 @@ public class WikipediaDump {
 		Pattern geotagsFilePattern = Pattern.compile(".*<a href=\"/"+wikiCodeName+"/"+date+"/"+wikiCodeName+"-"+date+"-"
 				+GraphipediaSettings.WIKIPEDIA_GEOTAGS_FILE+"\">"+wikiCodeName+"-"+date+"-"+GraphipediaSettings.WIKIPEDIA_GEOTAGS_FILE+"</a>(.+?)</li>.*");
 		
+		
 		URL url = new URL(edition.dumpUrl(date));
 		BufferedReader bd = new BufferedReader(new InputStreamReader(url.openStream()));
 		String line;
@@ -148,9 +149,9 @@ public class WikipediaDump {
 			if (xmlFileMatcher.matches()) 
 				this.xmlDumpFile = new DumpFile(edition.xmlFileUrl(date), size(xmlFileMatcher.group(1))) ;
 			else if ( crossLinkFileMatcher.matches() )
-				this.crosslinkDumpFile = new DumpFile(edition.crossLinkFileUrl(date), size(xmlFileMatcher.group(1))) ;
+				this.crosslinkDumpFile = new DumpFile(edition.crossLinkFileUrl(date), size(crossLinkFileMatcher.group(1))) ;
 			else if ( geotagsFileMatcher.matches() )
-				this.geotagsDumpFile = new DumpFile(edition.geotagFileUrl(date), size(xmlFileMatcher.group(1)));
+				this.geotagsDumpFile = new DumpFile(edition.geotagFileUrl(date), size(geotagsFileMatcher.group(1)));
 		}
 		bd.close();
 		return complete;
