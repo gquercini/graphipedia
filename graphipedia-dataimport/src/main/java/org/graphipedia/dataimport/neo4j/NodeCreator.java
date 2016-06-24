@@ -27,11 +27,13 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.graphipedia.dataimport.ProgressCounter;
-import org.graphipedia.dataimport.SimpleStaxParser;
+import org.graphipedia.dataimport.wikipedia.Article;
+import org.graphipedia.dataimport.wikipedia.Category;
+import org.graphipedia.dataimport.wikipedia.Geotags;
 import org.graphipedia.dataimport.wikipedia.Namespace;
 import org.graphipedia.dataimport.wikipedia.Page;
 import org.graphipedia.dataimport.wikipedia.parser.IntermediateXmlFileTags;
-import org.neo4j.helpers.collection.MapUtil;
+import org.graphipedia.dataimport.wikipedia.parser.SimpleStaxParser;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**
@@ -50,6 +52,11 @@ public class NodeCreator extends SimpleStaxParser {
 	 * An index of the nodes. 
 	 */
 	private final Map<String, Page> inMemoryIndex;
+	
+	/**
+	 * The geotags associated with pages that describe spatial entities.
+	 */
+	private final Map<String, Geotags> geotags;
 
 	/**
 	 * The code of the language of the Wikipedia edition being currently imported.
@@ -70,6 +77,11 @@ public class NodeCreator extends SimpleStaxParser {
 	 * Whether the Wikipedia page being currently imported is a redirect.
 	 */
 	private boolean redirect;
+	
+	/**
+	 * Whether the Wikipedia page being currently imported is a disambiguation.
+	 */
+	private boolean disambig;
 
 	/**
 	 * The namespace of the Wikipedia page being currently imported.
@@ -87,20 +99,23 @@ public class NodeCreator extends SimpleStaxParser {
 	 * @param inMemoryIndex The index of the nodes. 
 	 * @param language The code of the language of the Wikipedia edition being currently imported.
 	 * @param logger The logger used to record the progress of the node creation.
+	 * @param geotags The geotags associated with the pages that describe spatial entities.
 	 */
-	public NodeCreator(BatchInserter inserter, Map<String, Page> inMemoryIndex, String language, Logger logger) {
+	public NodeCreator(BatchInserter inserter, Map<String, Page> inMemoryIndex, String language, Logger logger, Map<String, Geotags> geotags) {
 		super(Arrays.asList(IntermediateXmlFileTags.page.toString(), IntermediateXmlFileTags.title.toString(), 
-				IntermediateXmlFileTags.id.toString(), IntermediateXmlFileTags.redirect.toString(), 
+				IntermediateXmlFileTags.id.toString(), IntermediateXmlFileTags.redirect.toString(), IntermediateXmlFileTags.disambig.toString(),  
 				IntermediateXmlFileTags.namespace.toString()), Arrays.asList(""));
 		this.inserter = inserter;
 		this.language = language;
 		this.inMemoryIndex = inMemoryIndex;
+		this.geotags = geotags;
 		
 		this.pageCounter = new ProgressCounter(logger);
 
 		this.title = null;
 		this.wikiId = null;
 		this.redirect = false;
+		this.disambig = false;
 		this.namespace = Namespace.ANY;
 	}
 
@@ -113,12 +128,13 @@ public class NodeCreator extends SimpleStaxParser {
 	}
 
 	@Override
-	protected void handleElement(String element, String value) {
+	protected boolean handleElement(String element, String value) {
 		if (IntermediateXmlFileTags.page.toString().equals(element)) {
 			createNode(this.title, this.wikiId, this.redirect, this.namespace);
 			this.title = null;
 			this.wikiId = null;
 			this.redirect = false;
+			this.disambig = false;
 			this.namespace = Namespace.ANY;
 		} else if (IntermediateXmlFileTags.title.toString().equals(element)) 
 			this.title = value;
@@ -128,6 +144,10 @@ public class NodeCreator extends SimpleStaxParser {
 			this.namespace = Integer.parseInt(value);
 		else if (IntermediateXmlFileTags.redirect.toString().equals(element)) 
 			this.redirect = true;
+		else if (IntermediateXmlFileTags.disambig.toString().equals(element))
+			this.disambig = true;
+		
+		return true;
 	}
 
 	/**
@@ -138,33 +158,40 @@ public class NodeCreator extends SimpleStaxParser {
 	 * @param namespace The namespace of the Wikipedia page.
 	 */
 	private void createNode(String title, String wikiId, boolean redirect, int namespace) {
-		Map<String, Object> properties = MapUtil.map(NodeAttribute.wikiid.name(), wikiId, 
-				NodeAttribute.title.name(), title, 
-				NodeAttribute.lang.name(), language); 
-		
 		long nodeId = -1;
+		Page newPage = null;
 		if ( namespace == Namespace.MAIN ) {
 			if ( redirect )
-				nodeId = inserter.createNode(properties, NodeLabel.Article, NodeLabel.Redirect);
+				nodeId = inserter.createNode(null, NodeLabel.Article, NodeLabel.Redirect);
+			else if ( disambig )
+				nodeId = inserter.createNode(null, NodeLabel.Article, NodeLabel.Disambig);
 			else
-				nodeId = inserter.createNode(properties, NodeLabel.Article);
+				nodeId = inserter.createNode(null, NodeLabel.Article);
+			if ( geotags.containsKey(wikiId) )
+				newPage = new Article(title, language, wikiId, nodeId, redirect, geotags.get(wikiId));
+			else
+				newPage = new Article(title, language, wikiId, nodeId, redirect);
 		}
 		else
 			if ( namespace == Namespace.CATEGORY ) {
 				if ( redirect )
-					nodeId = inserter.createNode(properties, NodeLabel.Category, NodeLabel.Redirect);
+					nodeId = inserter.createNode(null, NodeLabel.Category, NodeLabel.Redirect);
+				else if (disambig)
+					nodeId = inserter.createNode(null, NodeLabel.Category, NodeLabel.Disambig);
 				else
-					nodeId = inserter.createNode(properties, NodeLabel.Category);
+					nodeId = inserter.createNode(null, NodeLabel.Category);
+				newPage = new Category(title, language, wikiId, nodeId, redirect);
 			}
 			else
 				return;
-		inMemoryIndex.put(title, new Page(nodeId, redirect, namespace));
-		pageCounter.increment();
+		inMemoryIndex.put(title, newPage);
+		pageCounter.increment("Creating nodes");
 	}
 
 
 	@Override
-	protected void handleElement(String element, String value, List<String> attributeValues) {
+	protected boolean handleElement(String element, String value, List<String> attributeValues) {
+		return true;
 	}
 
 }

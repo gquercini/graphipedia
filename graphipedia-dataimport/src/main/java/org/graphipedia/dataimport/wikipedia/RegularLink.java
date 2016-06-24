@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,35 +19,32 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
-
-import org.neo4j.graphdb.Label;
+package org.graphipedia.dataimport.wikipedia;
 
 /**
- * Labels of the nodes in the Neo4j database.
+ * A regular link between two Wikipedia pages.
  *
  */
-public enum NodeLabel implements Label {
-	
+public class RegularLink extends Link {
+
 	/**
-	 * Label associated to a node corresponding to a Wikipedia article 
-	 * (page in the main namespace).
+	 * Creates a new {@code Link} from a source page to a target page.
+	 * 
+	 * @param sourceTitle The title of the source page.
+	 * @param targetTitle The title of the target page.
+	 * @param offset The offset of the link. The offset is defined as the number of characters occurring before the link
+	 * in the source page.
+	 * @param rank The rank of the link. The rank is the number of links occurring before the link in the source page.
+	 * @param infobox Whether the link occurs in the infobox of the source page.
+	 * @param intro Whether the link occurs in the introduction of the source page.
 	 */
-	Article,
+	public RegularLink(String sourceTitle, String targetTitle, int offset, int rank, boolean infobox, boolean intro) {
+		super(sourceTitle, targetTitle, offset, rank, infobox, intro);
+	}
+
+	@Override
+	public boolean isRegularLink() {
+		return true;
+	}
 	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia redirect page. 
-	 */
-	Redirect,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia disambiguation page.
-	 */
-	Disambig,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia
-	 * category.
-	 */
-	Category 
 }

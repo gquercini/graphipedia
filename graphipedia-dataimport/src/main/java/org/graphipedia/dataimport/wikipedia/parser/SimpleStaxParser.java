@@ -19,7 +19,7 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport;
+package org.graphipedia.dataimport.wikipedia.parser;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -44,7 +44,7 @@ import org.codehaus.stax2.XMLInputFactory2;
  *
  */
 public abstract class SimpleStaxParser {
-
+	
 	/**
 	 * Object used to get the content of a XML file.
 	 */
@@ -74,16 +74,20 @@ public abstract class SimpleStaxParser {
 	 * Handles an element of a XML file.
 	 * @param element The element (XML tag).
 	 * @param value The value of the element.
+	 * @return {@code true} if parsing should be continued, {@code false otherwise}.
+	 * @throws XMLStreamException when some XML-related error occurs.
 	 */
-	protected abstract void handleElement(String element, String value);
+	protected abstract boolean handleElement(String element, String value) throws XMLStreamException;
 
 	/**
 	 * Handles an element of a XML file with attributes.
 	 * @param element The element (XML tag).
 	 * @param value The value of the element.
 	 * @param attributeValues The values of the attributes of the given {@code element}.
+	 * @return {@code true} if parsing should be continued, {@code false otherwise}.
+	 * @throws XMLStreamException when some XML-related error occurs.
 	 */
-	protected abstract void handleElement(String element, String value, List<String> attributeValues);
+	protected abstract boolean handleElement(String element, String value, List<String> attributeValues) throws XMLStreamException;
 
 	/**
 	 * Parses a XML file.
@@ -144,11 +148,14 @@ public abstract class SimpleStaxParser {
 				break;
 			case XMLEvent.END_ELEMENT:
 				String element = elementStack.pop();
-				if ( isInterestingWithAttributes(element) )
-					handleElement(element, textBuffer.toString().trim(), attributeValues);
+				if ( isInterestingWithAttributes(element) ) {
+					if ( !handleElement(element, textBuffer.toString().trim(), attributeValues) )
+						return;
+				}
 				else
 					if (isInteresting(element)) {
-						handleElement(element, textBuffer.toString().trim());
+						if ( !handleElement(element, textBuffer.toString().trim()) )
+							return;
 					}
 				break;
 			case XMLEvent.CHARACTERS:

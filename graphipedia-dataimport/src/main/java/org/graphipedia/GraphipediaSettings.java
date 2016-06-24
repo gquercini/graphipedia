@@ -19,65 +19,49 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport;
+package org.graphipedia;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Logger;
 
 import org.apache.tools.ant.DirectoryScanner;
 
 /**
- * This class lists all the settings of Graphipedia.
+ * The settings of Graphipedia.
  *
  */
-public class DataImportSettings {
-	
-	/**
-	 * The property in the configuration file that indicates the 
-	 * codes of the Wikipedia editions to import.
-	 */
-	private static final String LANGUAGES = "languages";
-	
-	/**
-	 * The property in the configuration file that indicates
-	 * the directory of the Neo4j database where the Wikipedia language editions are imported.
-	 */
-	private static final String NEO4J_DIR = "neo4jdir";
+public class GraphipediaSettings {
 	
 	/**
 	 * The suffix of the name of the XML file containing the whole Wikipedia. 
 	 */
-	private static final String WIKIPEDIA_XML_FILE = "pages-articles.xml.bz2";
+	public static final String WIKIPEDIA_XML_FILE = "pages-articles.xml.bz2";
 	
 	/**
 	 * The suffix of the name of the file that contains the cross-language links.
 	 */
-	private static final String WIKIPEDIA_CROSSLINKS_FILE = "langlinks.sql.gz"; 
+	public static final String WIKIPEDIA_CROSSLINKS_FILE = "langlinks.sql.gz"; 
+	
+	/**
+	 * The suffix of the name of the file that contains the geotags associated to spatial entities.
+	 */
+	public static final String WIKIPEDIA_GEOTAGS_FILE = "geo_tags.sql.gz";
 
 	/**
 	 * The files that must be in the Wikipedia editions directories.
 	 */
-	private final static String[] WIKIPEDIA_EDITIONS_INPUT_FILES = 
+	public final static String[] WIKIPEDIA_EDITIONS_INPUT_FILES = 
 			new String[]{WIKIPEDIA_XML_FILE, 
-					WIKIPEDIA_CROSSLINKS_FILE}; 
+					WIKIPEDIA_CROSSLINKS_FILE, WIKIPEDIA_GEOTAGS_FILE}; 
 
-	/**
-	 * The Graphipedia logger.
-	 */
-	private Logger logger;
-
+	
 	/**
 	 * The codes of the languages of the Wikipedia editions to import.
 	 */
-	private String[] languages;
+	private List<String> languages;
 
 	/**
 	 * The directory of the Neo4j database were Wikipedia is to be imported.
@@ -92,38 +76,32 @@ public class DataImportSettings {
 
 	/**
 	 * Creates a new instance of Graphipedia settings.
-	 * @param logger The Graphipedia logger.
+	 * @param neo4jDir The directory where the Neo4j database is written.
 	 */
-	public DataImportSettings(Logger logger) {
-		this.logger = logger;
+	public GraphipediaSettings(File neo4jDir) {
 		this.wikipediaEditions = new HashMap<String, File>();
+		this.languages = new ArrayList<String>();
+		this.neo4jDir = neo4jDir;
 	}
-
-	/**
-	 * Loads the Graphipedia settings from the given input file.
-	 * @param settingsFile The file containing the settings of Graphipedia.
-	 * @throws IOException when something goes wrong while reading the settings file.
-	 */
-	public void loadSettings(File settingsFile) throws IOException {
-		Properties prop = new Properties();
-		InputStream input = new FileInputStream(settingsFile);
-		prop.load(input);
-		this.languages = prop.getProperty(LANGUAGES).split(",");
-		for ( int i = 0; i < languages.length; i += 1 )
-			this.languages[i] = this.languages[i].toLowerCase();
-		this.neo4jDir = new File(prop.getProperty(NEO4J_DIR));
-		input.close();
-		checkNeo4jDirectory();
-		checkWikipediaEditionsDirectories();
-	}
-	
 	
 	/**
 	 * Returns the languages of the Wikipedia editions to import to Neo4j.
 	 * @return The languages of the Wikipedia editions to import to Neo4j.
 	 */
 	public String[] languages() {
-		return this.languages;
+		String[] languages = new String[this.languages.size()];
+		int i = 0;
+		for ( String language : this.languages )
+			languages[i++] = language;
+		return languages;
+	}
+	
+	/**
+	 * Adds a new language to the settings.
+	 * @param language The code of the language to add.
+	 */
+	public void addLanguage(String language) {
+		this.languages.add(language);
 	}
 	
 	/**
@@ -145,47 +123,7 @@ public class DataImportSettings {
 		return wikipediaEditions.get(language);
 	}
 
-	/**
-	 * Performs some checks on the directories that contain the Wikipedia editions to import.
-	 */
-	private void checkWikipediaEditionsDirectories() {
-		for ( String lang : languages ) {
-			File editionDir = new File(lang);
-			if ( !editionDir.exists() || !editionDir.isDirectory() ) {
-				logger.severe("directory " + editionDir + " does not exist or is not a directory");
-				System.exit(-1);
-			}
-			checkWikipediaEditionFiles(editionDir);
-			this.wikipediaEditions.put(lang, editionDir);
-		}
-	}
 
-	/**
-	 * Checks the existence of the necessary input files in the given directory that contains 
-	 * a specific Wikipedia edition.
-	 * @param editionDir A directory containing a specific Wikipedia edition.
-	 */
-	private void checkWikipediaEditionFiles(File editionDir) {
-		for ( String fileName : WIKIPEDIA_EDITIONS_INPUT_FILES ) {
-			DirectoryScanner scanner = new DirectoryScanner();
-			scanner.setIncludes(new String[]{"*"+fileName});
-			scanner.setBasedir(editionDir);
-			scanner.setCaseSensitive(false);
-			scanner.scan();
-			String[] files = scanner.getIncludedFiles();
-			if ( files.length == 0 ) {
-				logger.severe("No file *" + fileName + " found in directory " + editionDir.getAbsolutePath());
-				System.exit(-1);
-			}
-			else
-				if ( files.length > 1 ) {
-					logger.severe("Multiple files *" + fileName + " found in directory " + editionDir.getAbsolutePath());
-					System.exit(-1);
-				}	
-		}
-
-	}
-	
 	/**
 	 * Returns the XML file that contains the whole Wikipedia edition in the specified language.
 	 * @param language The language code of the Wikipedia edition.
@@ -208,6 +146,16 @@ public class DataImportSettings {
 	}
 	
 	/**
+	 * Returns the file containing the geotags associated to the Wikipedia pages
+	 * that describe spatial entities in a specified language edition.
+	 * @param language The code of the language of the specified Wikipedia edition. 
+	 * @return The file that contains the geo-tags of the spatial entities.
+	 */
+	public File getGeotagsFile(String language) {
+		return getWikipediaEditionFile(language,WIKIPEDIA_GEOTAGS_FILE);
+	}
+	
+	/**
 	 * Returns the file of the given Wikipedia language edition with the given name suffix. 
 	 * @param language The language code of the Wikipedia edition.
 	 * @param fileNameSuffix The suffix of the name of the file to return.
@@ -225,30 +173,65 @@ public class DataImportSettings {
 	}
 
 
-	/**
-	 * Performs some checks on the Neo4j directory.
-	 */
-	private void checkNeo4jDirectory() {
-		if ( neo4jDir.exists() && !neo4jDir.isDirectory() ) {
-			logger.severe(this.neo4jDir + " exists and is not a directory\n");
-			System.exit(-1);
-		}
-		else
-			if ( neo4jDir.exists() && neo4jDir.isDirectory() ) {
-				logger.warning(this.neo4jDir + " already exists and the new Wikipedia editions will be added to this directory. Proceed? [Y/N]");
-				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-				try {
-					if (!br.readLine().equalsIgnoreCase("Y"))
-						System.exit(-1);
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-			else
-				if ( !neo4jDir.exists() &&  !neo4jDir.mkdir()) {
-					logger.severe("Unable to create directory " + this.neo4jDir + " in the working directory. Check the permissions and retry.");
-					System.exit(-1);
-				}
-	}
+//	/**
+//	 * Performs some checks on the Neo4j directory.
+//	 */
+//	private void checkNeo4jDirectory() {
+//		if ( neo4jDir.exists() && !neo4jDir.isDirectory() ) {
+//			logger.severe(this.neo4jDir + " exists and is not a directory\n");
+//			System.exit(-1);
+//		}
+//		else
+//			if ( neo4jDir.exists() && neo4jDir.isDirectory() ) {
+//				logger.severe("The directory " + this.neo4jDir + " already exists.");
+//				System.exit(-1);
+//			}
+//			else
+//				if ( !neo4jDir.exists() &&  !neo4jDir.mkdir()) {
+//					logger.severe("Unable to create directory " + this.neo4jDir + " in the working directory. Check the permissions and retry.");
+//					System.exit(-1);
+//				}
+//	}
+//	
+//	/**
+//	 * Performs some checks on the directories that contain the Wikipedia editions to import.
+//	 */
+//	private void checkWikipediaEditionsDirectories() {
+//		for ( String lang : languages ) {
+//			File editionDir = new File(lang);
+//			if ( !editionDir.exists() || !editionDir.isDirectory() ) {
+//				logger.severe("directory " + editionDir + " does not exist or is not a directory");
+//				System.exit(-1);
+//			}
+//			checkWikipediaEditionFiles(editionDir);
+//			this.wikipediaEditions.put(lang, editionDir);
+//		}
+//	}
+//
+//	/**
+//	 * Checks the existence of the necessary input files in the given directory that contains 
+//	 * a specific Wikipedia edition.
+//	 * @param editionDir A directory containing a specific Wikipedia edition.
+//	 */
+//	private void checkWikipediaEditionFiles(File editionDir) {
+//		for ( String fileName : WIKIPEDIA_EDITIONS_INPUT_FILES ) {
+//			DirectoryScanner scanner = new DirectoryScanner();
+//			scanner.setIncludes(new String[]{"*"+fileName});
+//			scanner.setBasedir(editionDir);
+//			scanner.setCaseSensitive(false);
+//			scanner.scan();
+//			String[] files = scanner.getIncludedFiles();
+//			if ( files.length == 0 ) {
+//				logger.severe("No file *" + fileName + " found in directory " + editionDir.getAbsolutePath());
+//				System.exit(-1);
+//			}
+//			else
+//				if ( files.length > 1 ) {
+//					logger.severe("Multiple files *" + fileName + " found in directory " + editionDir.getAbsolutePath());
+//					System.exit(-1);
+//				}	
+//		}
+//
+//	}
+//	
 }

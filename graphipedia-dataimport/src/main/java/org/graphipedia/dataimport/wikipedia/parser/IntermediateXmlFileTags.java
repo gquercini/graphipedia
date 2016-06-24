@@ -56,17 +56,27 @@ public enum IntermediateXmlFileTags {
 	redirect("rdr"),
 	
 	/**
+	 * Tag to indicate whether a page is a disambiguation.
+	 */
+	disambig("dis"),
+	
+	/**
 	 * The namespace of a page (its identifier).
 	 */
 	namespace("nms"),
 
 	/**
-	 * Tag delimiting the link to a page.
+	 * Tag delimiting the regular link to a page.
 	 */
-	link("l"),
+	regularlink("rl"),
+	
+	/**
+	 * tag delimiting the disambiguation link to a page
+	 */
+	dislink("dl"),
 
 	/**
-	 * Tag delimiting the title of a linked pageg
+	 * Tag delimiting the title of a linked page.
 	 */
 	linkTitle("lt"),
 

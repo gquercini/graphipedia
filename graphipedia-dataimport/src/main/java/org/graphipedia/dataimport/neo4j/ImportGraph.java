@@ -26,9 +26,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.LoggerFactory;
 import org.graphipedia.dataimport.ExtractLinks;
-import org.graphipedia.dataimport.DataImportSettings;
-import org.graphipedia.dataimport.LoggerFactory;
+import org.graphipedia.dataimport.ReadableTime;
+import org.graphipedia.dataimport.wikipedia.Geotags;
 import org.graphipedia.dataimport.wikipedia.Page;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
@@ -64,6 +66,11 @@ public class ImportGraph extends Thread {
      * An index of the nodes of the graph.
      */
     private final Map<String, Page> inMemoryIndex;
+    
+    /**
+     * The geotags associated to pages that describe spatial entities.
+     */
+    private final Map<String, Geotags> geotags;
 
     /**
      * Creates a new thread.
@@ -71,13 +78,15 @@ public class ImportGraph extends Thread {
      * @param inserter The Neo4j object that is used to quickly add nodes and links to a graph.
      * @param settings The settings of Graphipedia.
      * @param language The code of the language of the Wikipedia edition being imported.
+     * @param geotags The geotags associated to Wikipedia pages that describe spatial entities.
      */
-    public ImportGraph(BatchInserter inserter, DataImportSettings settings, String language) {
+    public ImportGraph(BatchInserter inserter, GraphipediaSettings settings, String language, Map<String, Geotags> geotags) {
     	this.language = language;
     	this.inserter = inserter;
         inMemoryIndex = new HashMap<String, Page>();
         this.logger = LoggerFactory.createLogger("Graph import [" + this.language.toUpperCase() + "]");
         this.temporaryLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractLinks.TEMPORARY_LINK_FILE);
+        this.geotags = geotags;
     }
 
     @Override
@@ -96,7 +105,8 @@ public class ImportGraph extends Thread {
 			e.printStackTrace();
 			System.exit(-1);
 		}
-       // this.temporaryLinkFile.delete();
+        setAttributeNodes();
+      
     }
 
     /**
@@ -105,11 +115,11 @@ public class ImportGraph extends Thread {
      */
     public void createNodes() throws Exception {
         logger.info("Importing pages...");
-        NodeCreator nodeCreator = new NodeCreator(inserter, inMemoryIndex, language, logger);
+        NodeCreator nodeCreator = new NodeCreator(inserter, inMemoryIndex, language, logger, geotags); 
         long startTime = System.currentTimeMillis();
         nodeCreator.parse(temporaryLinkFile.getAbsolutePath());
-        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        logger.info(String.format("%d pages imported in %d seconds.\n", nodeCreator.getPageCount(), elapsedSeconds));
+        long elapsed = System.currentTimeMillis() - startTime;
+        logger.info(String.format("%d pages imported in "+ ReadableTime.readableTime(elapsed) +"\n", nodeCreator.getPageCount()));
     }
 
     /**
@@ -121,8 +131,20 @@ public class ImportGraph extends Thread {
         LinkCreator linkCreator = new LinkCreator(inserter, inMemoryIndex, logger);
         long startTime = System.currentTimeMillis();
         linkCreator.parse(temporaryLinkFile.getAbsolutePath());
-        long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-        logger.info(String.format("%d links imported in %d seconds\n", linkCreator.getLinkCount(), elapsedSeconds));
+        long elapsed = System.currentTimeMillis() - startTime;
+        logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed) + "\n", linkCreator.getLinkCount()));
+    }
+    
+    /**
+     * Sets the values of the attributes of the nodes.
+     */
+    private void setAttributeNodes() {
+    	logger.info("Setting the attributes of the nodes...");
+    	AttributeNodeUpdater updater = new AttributeNodeUpdater(inserter, inMemoryIndex, logger);
+    	long startTime = System.currentTimeMillis();
+    	updater.update();
+    	long elapsed = System.currentTimeMillis() - startTime;
+    	logger.info(String.format("%d nodes updated in " + ReadableTime.readableTime(elapsed) + "\n", updater.getNodeCount()));
     }
 
 }

@@ -43,15 +43,15 @@ public enum LinkType implements RelationshipType {
 	/**
 	 * A redirect link
 	 */
-	redirect,
+	redirectTo,
 	
 	/**
 	 * A link between two pages, of which the source is an article and the target page is a category.
 	 */
-	belong,
+	belongTo,
 	
 	/**
 	 * A link between two categories, of which the target is the parent of the source.
 	 */
-	child
+	childOf
 }

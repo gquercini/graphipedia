@@ -19,73 +19,49 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
+package org.graphipedia.download;
+
 
 /**
- * Enumerates the attributes of a node in Neo4j.
- * Each node corresponds to a Wikipedia page.
+ * A dump file of a Wikipedia edition.
+ *
  */
-public enum NodeAttribute {
+public class DumpFile {
 	
 	/**
-	 * The title of the page corresponding to a node.
+	 * The URL of this dump file.
 	 */
-	title,
+	private String url;
 	
 	/**
-	 * The language of the page corresponding to a node.
+	 * The size (in bytes) of this dump file.
 	 */
-	lang,
+	private double size;
 	
 	/**
-	 * The identifier in Wikipedia of the page corresponding to a node.
+	 * Creates a new {@code DumpFile}.
+	 * @param url The URL of the dump file.
+	 * @param size THe size of the dump file.
 	 */
-	wikiid,
+	public DumpFile(String url, double size) {
+		this.url = url;
+		this.size = size;
+	}
 	
 	/**
-	 * The number of articles to which an article links.
+	 * Returns the URL of this dump file.
+	 * @return The URL of this dump file.
 	 */
-	outdegree,
+	public String url() {
+		return this.url;
+	}
 	
 	/**
-	 * The number of articles that are linked by an article.
+	 * Returns the size of this dump file.
+	 * @return The size of this dump file.
 	 */
-	indegree,
-	
-	/**
-	 * The number of categories that are parent of an article or a category.
-	 */
-	parents,
-	
-	/**
-	 * The number of categories that are children of a category.
-	 */
-	children,
-	
-	/**
-	 * The number of articles that a category contains.
-	 */
-	size,
-	
-	/**
-	 * The globe of a spatial entity, if the article is about a spatial entity.
-	 */
-	globe,
-	
-	/**
-	 * The latitude of a spatial entity, if the article is about a spatial entity.
-	 */
-	latitude,
-	
-	/**
-	 * The longitude of a spatial entity, if the article is about a spatial entity.
-	 */
-	longitude,
-	
-	/**
-	 * The type of a spatial entity, if the article is about a spatial entity.
-	 */
-	type
-	
+	public double size() {
+		return this.size;
+	}
 
 }

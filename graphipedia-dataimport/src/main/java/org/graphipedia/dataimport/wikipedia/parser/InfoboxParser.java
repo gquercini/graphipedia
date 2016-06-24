@@ -21,7 +21,9 @@
 //
 package org.graphipedia.dataimport.wikipedia.parser;
 
+
 import org.graphipedia.dataimport.wikipedia.Infobox;
+import org.graphipedia.dataimport.wikipedia.InfoboxTemplates;
 
 /**
  * A parser for the infobox of a Wikipedia page.
@@ -30,9 +32,17 @@ import org.graphipedia.dataimport.wikipedia.Infobox;
 public class InfoboxParser {
 
 	/**
-	 * The string used to introduce an infobox in the wiki text of a Wikipedia page.
+	 * The templates used to include infoboxes in a Wikipedia page.
 	 */
-	private static String INFOBOX_CONST_STR = "{{Infobox";
+	private InfoboxTemplates it;
+
+	/**
+	 * Constructor.
+	 * @param it The templates used to include infoboxes in a Wikipedia page.
+	 */
+	public InfoboxParser(InfoboxTemplates it) {
+		this.it = it;
+	}
 
 	/**
 	 * Parses the given text of a Wikipedia page and returns its infobox, if any.
@@ -44,28 +54,34 @@ public class InfoboxParser {
 	 * 
 	 */
 	public Infobox parse(String text) {
-		int startPos = text.indexOf(INFOBOX_CONST_STR);
-		if(startPos < 0) 
-			return null;
-		int bracketCount = 2;
-		int endPos = startPos + INFOBOX_CONST_STR.length();
-		for(; endPos < text.length(); endPos++) {
-			switch(text.charAt(endPos)) {
-			case '}':
-				bracketCount--;
-				break;
-			case '{':
-				bracketCount++;
-				break;
-			default:
+		int startPos = -1;
+		int endPos = -1;
+		while( (startPos = text.indexOf("{{", endPos + 1)) >=0 ) {
+			int bracketCount = 2;
+			endPos = startPos + "{{".length();
+			for(; endPos < text.length(); endPos++) {
+				switch(text.charAt(endPos)) {
+				case '}':
+					bracketCount--;
+					break;
+				case '{':
+					bracketCount++;
+					break;
+				default:
+				}
+				if(bracketCount == 0) break;
 			}
-			if(bracketCount == 0) break;
+			if(endPos >= text.length())
+				break;
+			String template = text.substring(startPos, endPos+1);
+			int barIndex = template.indexOf("|");
+			if ( barIndex >= 0) {
+				String templateName = template.substring(2, barIndex).trim();
+				if ( !it.isInfoboxTemplate(templateName) ) 
+					continue;
+				return new Infobox(template, startPos, endPos + 1);
+			}
 		}
-		if(endPos+1 >= text.length()) 
-			return null;
-		String infoBoxText = text.substring(startPos, endPos+1);
-		return new Infobox(infoBoxText, startPos, endPos + 1);
+		return null;
 	}
-
-
 }

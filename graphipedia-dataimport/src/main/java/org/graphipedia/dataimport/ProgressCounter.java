@@ -69,11 +69,12 @@ public class ProgressCounter {
     /**
      * Increments the raw count and records the progress to the logger
      * if enough progress is made. 
+     * @param message A message to display along with the progress.
      */
-    public void increment() {
+    public void increment(String message) {
         count++;
         if (count % BIG_STEP == 0) 
-            logger.info(count / THOUSAND +"k");
+            logger.info(message + " " + count / THOUSAND +"k");
     }
 
 }

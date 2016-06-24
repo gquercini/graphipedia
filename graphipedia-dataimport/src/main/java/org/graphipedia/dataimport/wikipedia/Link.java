@@ -28,7 +28,7 @@ import java.util.Set;
  * A link between two Wikipedia pages.
  * The link is directed from source page to a target page.
  */
-public class Link {
+public abstract class Link {
 	
 	/**
 	 * The title of the source page.
@@ -83,7 +83,7 @@ public class Link {
 	 * @param infobox Whether the link occurs in the infobox of the source page.
 	 * @param intro Whether the link occurs in the introduction of the source page.
 	 */
-	public Link(String sourceTitle, String targetTitle, int offset, int rank, boolean infobox, boolean intro) {
+	protected Link(String sourceTitle, String targetTitle, int offset, int rank, boolean infobox, boolean intro) {
 		this.sourceTitle = sourceTitle;
 		this.targetTitle = targetTitle;
 		this.anchors = new HashSet<String>();
@@ -209,6 +209,11 @@ public class Link {
 		
 		return ((Link)link).targetTitle.equals(this.targetTitle);
 	}
-
+	
+	/**
+	 * Returns whether this is a regular link.
+	 * @return {@code true} if this is a regular link, {@code false} if this is a disambiguation link.
+	 */
+	public abstract boolean isRegularLink(); 
 
 }

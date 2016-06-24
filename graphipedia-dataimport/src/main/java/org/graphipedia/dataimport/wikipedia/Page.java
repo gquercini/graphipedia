@@ -25,7 +25,22 @@ package org.graphipedia.dataimport.wikipedia;
  * A Wikipedia page.
  *
  */
-public class Page {
+public abstract class Page {
+	
+	/**
+	 * The title of this page.
+	 */
+	private String title;
+	
+	/**
+	 * The code of the language of the Wikipedia edition containing this page.
+	 */
+	private String lang;
+	
+	/**
+	 * The identfier of this page in its Wikipedia edition.
+	 */
+	private String wikiid;
 	
 	/**
 	 * The identifier of the node in the Neo4j database that corresponds to this page.
@@ -33,28 +48,73 @@ public class Page {
 	private long neo4jId;
 	
 	/**
-	 * Whether this page is a redirect.
+	 * The number of categories that are parents of this page.
+	 */
+	private int parents;
+	
+	/**
+	 * Whether this article is a redirect.
 	 */
 	private boolean redirect;
 	
-	/**
-	 * The namespace of this page. One of the constants
-	 * in class {@link Namespace}.
-	 */
-	private int namespace;
 	
 	/**
 	 * Creates a new {@code Page}.
+	 * @param title The title of the new page.
+	 * @param lang The code of the language of the Wikipedia edition of the new page.
+	 * @param wikiid The identifier of the new page in its Wikipedia edition.
 	 * @param neo4jId The identifier of the node in the Neo4j database that corresponds to the page.
-	 * @param redirect Whether the page is a redirect.
-	 * @param namespace The namespace of the page (one of the constants defined in class {@link Namespace}).
+	 * @param redirect Whether this page is a redirect.
 	 */
-	public Page(long neo4jId, boolean redirect, int namespace) {
+	protected Page(String title, String lang, String wikiid, long neo4jId, boolean redirect) {
+		this.title = title;
+		this.lang = lang;
+		this.wikiid = wikiid;
 		this.neo4jId = neo4jId;
 		this.redirect = redirect;
-		this.namespace = namespace;
+		this.parents = 0;
 	}
 	
+	
+	/**
+	 * Returns the title of this page.
+	 * @return The title of this page.
+	 */
+	public String title() {
+		return title;
+	}
+	
+	/**
+	 * Returns the code of the language of the Wikipedia edition of this page.
+	 * @return The code of the language of the Wikipedia edition of this page.
+	 */
+	public String lang() {
+		return lang;
+	}
+	
+	/**
+	 * Returns the identifier of this page in the Wikipedia edition of this page.
+	 * @return The identifier of this page in the Wikipedia edition of this page.
+	 */
+	public String wikiid() {
+		return this.wikiid;
+	}
+	
+	/**
+	 * Returns the number of categories that are parents of this page.
+	 * @return The number of categories that are parents of this page.
+	 */
+	public int parents() {
+		return this.parents;
+	}
+	
+	/**
+	 * Increments the number of parents of this page.
+	 */
+	public void incrementParents() {
+		this.parents += 1;
+	}
+
 	/**
 	 * Sets the identifier in the Neo4j database of the node corresponding to this page.
 	 *  
@@ -73,34 +133,31 @@ public class Page {
 	}
 	
 	/**
-	 * Returns whether this page is a redirect.
-	 * @return {@code true} if this page is a redirect, {@code false} otherwise.
-	 */
-	public boolean redirect() {
-		return redirect;
-	}
-	
-	/**
 	 * Sets whether this page is a redirect.
-	 * @param redirect {@code true} if this page is a redirect, {@code false} otherwise.
+	 * @param redirect {@code true} it this page is a redirect, {@code false} otherwise.
 	 */
 	public void redirect(boolean redirect) {
 		this.redirect = redirect;
 	}
 	
 	/**
-	 * Returns the namespace of this page.
-	 * @return The namespace of this page.
+	 * Returns whether this page is a redirect.
+	 * @return {@code true} if this page is a redirect, {@code false} otherwise.
 	 */
-	public int namespace() {
-		return this.namespace;
+	public boolean redirect() {
+		return this.redirect;
 	}
-
+	
+	
 	/**
-	 * Sets the namespace of this page.
-	 * @param namespace The namespace of this page.
+	 * Returns whether this page is an article (in the main namespace).
+	 * @return {@code true} if this page is an article, {@code false} otherwise.
 	 */
-	public void namespace(int namespace) {
-		this.namespace = namespace;
-	}
+	public abstract boolean isArticle();
+	
+	/**
+	 * Returns whether this page is a category.
+	 * @return {@code true} if this page is a category, {@code false} otherwise.
+	 */
+	public abstract boolean isCategory();
 }

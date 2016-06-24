@@ -56,6 +56,11 @@ public enum XmlFileTags {
 	/**
 	 * Tag that identifies the information on a namespace.
 	 */
-	namespace
+	namespace,
+	
+	/**
+	 * Tag that includes the information on all namespaces.
+	 */
+	namespaces;
 
 }

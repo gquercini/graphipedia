@@ -27,8 +27,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -38,14 +40,18 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.compress.compressors.CompressorInputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.graphipedia.CheckPoint;
+import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.LoggerFactory;
 import org.graphipedia.dataimport.neo4j.NodeAttribute;
 import org.graphipedia.dataimport.neo4j.NodeLabel;
 import org.graphipedia.dataimport.wikipedia.Namespace;
+import org.graphipedia.dataimport.wikipedia.Namespaces;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+
 
 /**
  * This thread extracts the cross-language links of a Wikipedia language edition from the 
@@ -54,7 +60,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
  * Neo4j separated by a comma.
  */
 public class ExtractCrossLinks extends Thread {
-	
+
 	/**
 	 * The output file name.
 	 */
@@ -78,13 +84,18 @@ public class ExtractCrossLinks extends Thread {
 	/**
 	 * The settings of the import.
 	 */
-	private DataImportSettings settings;
+	private GraphipediaSettings settings;
 
 
 	/**
 	 * The codes of the languages of the Wikipedia editions to import.
 	 */
 	private Set<String> languages;
+
+	/**
+	 * The namespaces in the Wikipedia editions to import.
+	 */
+	private Map<String, Namespaces> namespaces;
 
 	/**
 	 * The code of the language of the current Wikipedia edition.  
@@ -100,40 +111,54 @@ public class ExtractCrossLinks extends Thread {
 	 * The connection to the Neo4j database.
 	 */
 	private GraphDatabaseService graphDb;
+	
+	/**
+	 * The checkpoint information of Graphipedia.
+	 */
+	private CheckPoint checkpoint;
 
 	/**
 	 * Creates a new cross-link importer with the specified parameters. 
+	 * @param graphDb Connection to the Neo4j database to read data (useful to get the neo4j identifier of a node, based
+	 * on the wiki id of the corresponding article.)
 	 * @param settings The settings of the import.
 	 * @param languages The codes of the languages of the Wikipedia editions to import. 
+	 * @param namespaces The namespaces of the Wikipedia edition languages to import.
 	 * @param currentLanguage An index in the array {@code languages}, indicating the current Wikipedia language edition.  
+	 * @param checkpoint The checkpoint information of Graphipedia.
 	 */
-	public ExtractCrossLinks(DataImportSettings settings, String[] languages, int currentLanguage) {
+	public ExtractCrossLinks(GraphDatabaseService graphDb, GraphipediaSettings settings, String[] languages, 
+			Namespaces[] namespaces, int currentLanguage, CheckPoint checkpoint) {
+		this.graphDb = graphDb;
 		this.settings = settings;
 		this.languages = new HashSet<String>();
-		for ( String language : languages ) 
-			this.languages.add(language);
+		this.namespaces = new HashMap<String, Namespaces>();
+		for (  int i = 0; i < languages.length ; i += 1) {
+			this.languages.add(languages[i]);
+			this.namespaces.put(languages[i], namespaces[i]);
+		}
+
 		this.currentLanguage = languages[currentLanguage];
-		logger = LoggerFactory.createLogger("Extract crosslinks  (" + languages[currentLanguage].toUpperCase() + ")");
+		logger = LoggerFactory.createLogger("Extract crosslinks  (" + this.currentLanguage.toUpperCase() + ")");
 		linkCounter = new ProgressCounter(logger);
+		this.checkpoint = checkpoint;
 	}
 
 	@Override
 	public void run() {
-		File namespaceFile = new File(settings.wikipediaEditionDirectory(currentLanguage), Namespace.NAMESPACE_FILE);
-		if ( !namespaceFile.exists() ) {
-			logger.severe("Could not find file " + namespaceFile.getAbsolutePath());
-			System.exit(-1);
-		}
 		File outputFile = new File(settings.wikipediaEditionDirectory(currentLanguage), OUTPUT_FILE_NAME);
+		if ( checkpoint.isCrossLinksExtracted(this.currentLanguage) ) {
+			logger.info("Using the cross-links from a previous computation");
+			return;
+		}
 		long startTime = System.currentTimeMillis();
-		connectToNeo4j();
 		try ( Transaction tx = graphDb.beginTx() ) {
 			String inputFile = settings.getCrossLinkFile(currentLanguage).getAbsolutePath();
 			try {
 				FileInputStream fin = new FileInputStream(inputFile);
 				BufferedInputStream bis = new BufferedInputStream(fin);
 				CompressorInputStream input = new CompressorStreamFactory().createCompressorInputStream(bis);
-				parse(input, outputFile, namespaceFile);
+				parse(input, outputFile);
 				fin.close();
 				bis.close();
 				input.close();
@@ -145,32 +170,15 @@ public class ExtractCrossLinks extends Thread {
 			}
 			tx.success();
 		}
-		disconnectFromNeo4j();
-		long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-		logger.info(String.format("%d links extracted in %d seconds.\n", linkCounter.getCount(), elapsedSeconds));
-	}
-
-	/**
-	 * Connects to the Neo4j database.
-	 */
-	private void connectToNeo4j() {
-		this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(settings.neo4jDir());
-		Runtime.getRuntime().addShutdownHook( new Thread()
-		{
-			@Override
-			public void run()
-			{
-				graphDb.shutdown();
-			}
-		} );
-
-	}
-
-	/**
-	 * Disconnects from the Neo4j database.
-	 */
-	private void disconnectFromNeo4j() {
-		this.graphDb.shutdown();
+		try {
+			checkpoint.addCrossLinksExtracted(this.currentLanguage, true);
+		} catch (IOException e) {
+			logger.severe("Error while saving the checkpoint to file");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		long elapsed = System.currentTimeMillis() - startTime;
+		logger.info(String.format("%d links extracted in "+ ReadableTime.readableTime(elapsed) +"\n", linkCounter.getCount()));
 	}
 
 	/**
@@ -180,11 +188,9 @@ public class ExtractCrossLinks extends Thread {
 	 * 
 	 * @param inputStream The input stream.
 	 * @param outputFile The output file.
-	 * @param namespaceFile The file containing the list of the namespaces.
 	 * @throws Exception when something goes wrong while reading/writing files.
 	 */
-	private void parse(InputStream inputStream, File outputFile, File namespaceFile) throws Exception{
-		Map<String, Namespace> namespaces = Namespace.getNamespacesFromFile(namespaceFile);
+	private void parse(InputStream inputStream, File outputFile) throws Exception{
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outputFile));
 		BufferedReader bd  = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
 		String line = "";
@@ -199,15 +205,18 @@ public class ExtractCrossLinks extends Thread {
 					String targetPageTitle = matcher1.group(3);
 					if ( !languages.contains(targetLang) )
 						continue;
-					targetPageTitle = targetPageTitle.substring(0, 1).toUpperCase() + targetPageTitle.substring(1);
-					String namespaceName = Namespace.wikipediaPageNamespace(targetPageTitle);
-					if ( !namespaces.containsKey(namespaceName) )
-						continue;
-					long sourcePageId = getNodeidByWikiid(sourcePageWikiid, currentLanguage);
-					long targetPageId = getNodeIdByTitle(targetPageTitle, targetLang, namespaces.get(namespaceName));
-					if( sourcePageId != -1 && targetPageId != -1 ) {
-						bw.write(sourcePageId + "," + targetPageId + "\n");
-						linkCounter.increment();
+					if (targetPageTitle.length() == 1)
+						targetPageTitle = targetPageTitle.toUpperCase();
+					else if ( targetPageTitle.length() > 1 )
+						targetPageTitle = targetPageTitle.substring(0, 1).toUpperCase() + targetPageTitle.substring(1);
+					Namespace targetNamespace = this.namespaces.get(targetLang).wikipediaPageNamespace(targetPageTitle);
+					if ( targetNamespace.id() == Namespace.MAIN || targetNamespace.id() == Namespace.CATEGORY ) {
+						long sourcePageId = getNodeidByWikiid(sourcePageWikiid, currentLanguage);
+						long targetPageId = getNodeIdByTitle(targetPageTitle, targetLang, targetNamespace);
+						if( sourcePageId != -1 && targetPageId != -1 ) {
+							bw.write(sourcePageId + "," + targetPageId + "\n");
+							linkCounter.increment("Cross-links ");
+						}
 					}
 				}
 
@@ -235,7 +244,7 @@ public class ExtractCrossLinks extends Thread {
 			if(((String)node.getProperty(NodeAttribute.lang.name())).equalsIgnoreCase(language))
 				return node.getId();
 		}
-		
+
 		ResourceIterator<Node> categories = graphDb.findNodes(NodeLabel.Category, NodeAttribute.wikiid.name(), wikiid);
 		while(categories.hasNext()) {
 			Node node = categories.next();
@@ -244,7 +253,7 @@ public class ExtractCrossLinks extends Thread {
 		}
 		return -1L;
 	}
-	
+
 	/**
 	 * Returns the Neo4j node corresponding to the Wikipedia page with specified title, language and namespace.
 	 * @param title The title of a Wikipedia page.
@@ -254,7 +263,8 @@ public class ExtractCrossLinks extends Thread {
 	 * namespace, if any, {@code -1} otherwise.
 	 */
 	private long getNodeIdByTitle(String title, String language, Namespace namespace) {
-		NodeLabel label = namespace.isMain() ? NodeLabel.Article : namespace.isCategory() ? NodeLabel.Category : null;
+		NodeLabel label = namespace.id() == Namespace.MAIN ? NodeLabel.Article : 
+			namespace.id() == Namespace.CATEGORY ? NodeLabel.Category : null;
 		if ( label == null )
 			return -1L;
 		ResourceIterator<Node> articles = graphDb.findNodes(label, NodeAttribute.title.name(), title);
@@ -268,10 +278,4 @@ public class ExtractCrossLinks extends Thread {
 
 
 }
-
-
-
-
-
-
 

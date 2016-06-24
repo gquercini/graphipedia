@@ -34,5 +34,10 @@ public enum LinkAttribute {
     /**
      * The number of occurrences of a link in a Wikipedia page.
      */
-    occurrences
+    occurrences,
+    
+    /**
+     * Whether a link is a disambiguation link (one that leads from a disambiguation page to one of its interpretations).
+     */
+    disambig
 }

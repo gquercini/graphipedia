@@ -21,7 +21,6 @@
 //
 package org.graphipedia.dataimport.wikipedia.parser;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,15 +28,20 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.graphipedia.dataimport.wikipedia.DisambiguationLink;
+import org.graphipedia.dataimport.wikipedia.DisambiguationPages;
 import org.graphipedia.dataimport.wikipedia.Infobox;
+import org.graphipedia.dataimport.wikipedia.InfoboxTemplates;
 import org.graphipedia.dataimport.wikipedia.Introduction;
 import org.graphipedia.dataimport.wikipedia.Link;
 import org.graphipedia.dataimport.wikipedia.Namespace;
+import org.graphipedia.dataimport.wikipedia.Namespaces;
+import org.graphipedia.dataimport.wikipedia.RegularLink;
 
 /**
  * Parser of the wiki code of a Wikipedia page.
  * Used to extract the links from a page and associated metadata.
- * The links to pages that do not belong to the set of allowed namespaces are ignored.
+ * Only links to articles (pages in the main namespace) and categories are considered.
  * 
  */
 public class WikiTextParser {
@@ -50,22 +54,31 @@ public class WikiTextParser {
 	/** 
 	 * The list of the allowed namespaces.
 	 */
-	private ArrayList<Namespace> namespaces;
+	private Namespaces ns;
+	
+	/**
+	 * The infobox templates.
+	 */
+	private InfoboxTemplates it;
+	
+	/**
+	 * The disambiguation pages.
+	 */
+	private DisambiguationPages dp;
 
 	/**
 	 * Creates a new {@code WikiTextParser}. 
+	 * @param ns The list of namespaces.
+	 * @param it The list of infobox templates.
+	 * @param dp The list of disambiguation pages.
 	 */
-	public WikiTextParser() {
-		this.namespaces = new ArrayList<Namespace>();
+	public WikiTextParser(Namespaces ns, InfoboxTemplates it, DisambiguationPages dp) {
+		this.ns = ns;
+		this.it = it;
+		this.dp = dp;
 	}
 	
-	/**
-	 * Adds a new namespace to the list of allowed namespaces. 
-	 * @param namespace A namespace.
-	 */
-	public void addNamespace(Namespace namespace) {
-		this.namespaces.add(namespace);
-	}
+	
 	
 	/**
 	 * Parses the text of a Wikipedia page and extracts the links and associated metadata.
@@ -75,56 +88,74 @@ public class WikiTextParser {
 	 * @return The information extracted from the given {@code text}.
 	 */
 	public Set<Link> parse(String title, String text) {
-		Infobox infobox = (new InfoboxParser()).parse(text);
-		text = stripTemplates(text);
+		text = stripReferences(text);
+		Infobox infobox = (new InfoboxParser(this.it)).parse(text);
 		Introduction intro = (new IntroductionParser()).parse(text); 
 		return parseLinks(title, text, infobox, intro);
 	}
 	
 	/**
-	 * Strips references to templates from the text. The references to templates are between double curly brackets. 
-	 * @param text The text of a Wikipedia page.
-	 * @return The given text of a Wikipedia page stripped of the references to the templates.
+	 * Strips the references from the given text.
+	 * References is text between <ref> ... </ref>.
+	 * @param text The text a Wikipedia page.
+	 * @return The {@code text} stripped of the references.
 	 */
-	private String stripTemplates(String text) {
+	private String stripReferences(String text) {
 		int startPos = -1;
-		while( (startPos = text.indexOf("{{")) >=0 ) {
-			int bracketCount = 2;
-			int endPos = startPos + "{{".length();
-			for(; endPos < text.length(); endPos++) {
+		while( (startPos = text.indexOf("<ref")) >= 0 ) {
+			int ref = 1;
+			int endPos = startPos + "<ref".length();
+			while ( endPos < text.length() ) {
 				switch(text.charAt(endPos)) {
-				case '}':
-					bracketCount--;
+				case '>' :
+					if (text.charAt(endPos-1) == '/')
+						ref--;
+					endPos++;
 					break;
-				case '{':
-					bracketCount++;
+				case '<' :
+					if (endPos + 1 < text.length() && endPos + 10 < text.length() 
+							&& text.substring(endPos + 1, endPos + 10).equals("ref name=")) {
+						ref++;
+						endPos += 10;
+					}
+					else if ( endPos + 1 < text.length() && endPos + 5 < text.length() && 
+							text.substring(endPos + 1, endPos + 5).equals("ref>") ) {
+						ref ++;
+						endPos += 5;
+					}
+					else if ( endPos + 1 < text.length() && endPos + 6 < text.length() && 
+							text.substring(endPos + 1, endPos + 6).equals("/ref>")  ) {
+						ref--;
+						endPos += 6;
+					}
+					else
+						endPos += 1;
 					break;
-				default:
+				default: endPos += 1;
 				}
-				if(bracketCount == 0) break;
-			}
+				if ( ref == 0 )
+					break;
+			} // end while
 			String toBeRemoved = "";
 			if(endPos+1 >= text.length()) 
 				toBeRemoved = text.substring(startPos);
 			else
-				toBeRemoved = text.substring(startPos, endPos+1);
+				toBeRemoved = text.substring(startPos, endPos);
 			text = text.replace(toBeRemoved, "");
 		}
-
 		return text;
 	}
 	
-
 	/**
 	 * Parses the wiki text of a Wikipedia page and extracts all links.
 	 * 
-	 * @param pageTitle The title of the page from which the links are extracted. 
+	 * @param sourceTitle The title of the page from which the links are extracted. 
 	 * @param text The text of a Wikipedia page.
 	 * @param infobox The infobox of a Wikipedia page.
 	 * @param intro THe introduction of a Wikipedia page.
 	 * @return The set of links extracted from the given {@code text}. 
 	 */
-	private Set<Link> parseLinks(String pageTitle, String text, Infobox infobox, Introduction intro) {
+	private Set<Link> parseLinks(String sourceTitle, String text, Infobox infobox, Introduction intro) {
 		Map<String, Link> links = new HashMap<String, Link>();
 		if (text != null) {
 			Matcher matcher = LINK_PATTERN.matcher(text);
@@ -132,13 +163,17 @@ public class WikiTextParser {
 			while (matcher.find()) {
 				// We found a link. We have to check that the linked page is an article or belongs to a namespace that we want.
 				linkCounter += 1;
-				String title = matcher.group(1);
-				title = title.substring(0, 1).toUpperCase() + title.substring(1); // Make the first character uppercase
-				if ( title.equals(pageTitle) )
+				String targetTitle = matcher.group(1);
+				if ( targetTitle.length() == 1 )
+					targetTitle= targetTitle.toUpperCase();
+				else if (targetTitle.length() > 1)
+					targetTitle = targetTitle.substring(0, 1).toUpperCase() + targetTitle.substring(1); // Make the first character uppercase
+				if ( targetTitle.equals(sourceTitle) )
 					continue;
-				if (isValidPage(title)) {
-					
-					String[] anchor = checkAnchorText(title);
+				String[] anchor = checkAnchorText(targetTitle);
+				Namespace pageNamespace = ns.wikipediaPageNamespace(anchor[0]);
+				if (pageNamespace.id() == Namespace.MAIN || 
+						pageNamespace.id() == Namespace.CATEGORY) {
 					int offset = matcher.start();
 					
 					if ( links.containsKey(anchor[0]) ) {
@@ -150,11 +185,17 @@ public class WikiTextParser {
 							existingLink.infobox(true);
 						if (intro != null && offset >= intro.startIndex() && offset <= intro.endIndex())
 							existingLink.intro(true);
-						
 					}
 					else
 					{
-						Link newLink = new Link(pageTitle, anchor[0], offset, linkCounter, 
+						Link newLink = null;
+						if ( this.dp.isDisambiguationPage(sourceTitle) && 
+								isDisambiguationLink(text, offset))
+							newLink = new DisambiguationLink(sourceTitle, anchor[0], offset, linkCounter, 
+									infobox != null && offset >= infobox.startIndex() && offset <= infobox.endIndex(), 
+									intro != null && offset >= intro.startIndex() && offset <= intro.endIndex());
+						else	
+						newLink = new RegularLink(sourceTitle, anchor[0], offset, linkCounter, 
 								infobox != null && offset >= infobox.startIndex() && offset <= infobox.endIndex(), intro != null && offset >= intro.startIndex() && offset <= intro.endIndex());
 						if ( anchor[1] != null )
 							newLink.addAnchor(anchor[1]);
@@ -164,6 +205,25 @@ public class WikiTextParser {
 			}
 		}
 		return new HashSet<Link>(links.values());
+	}
+	
+	/**
+	 * Returns whether a link has to be considered a disambiguation link, that is one that leads from
+	 * one disambiguation page to an article that explains a possible interpretation of the term 
+	 * described by the disambiguation page.
+	 * @param text The wiki code of a disambiguation page.
+	 * @param offset The position in the text of the link.
+	 * @return {@code true} whether the link, of which the {@code offset} is known, is a disambiguation link,
+	 * {@code false} otherwise.
+	 */
+	private boolean isDisambiguationLink(String text, int offset) {
+		int asteriskIndex = text.lastIndexOf("*", offset);
+		if ( asteriskIndex < 0 )
+			return false;
+		String substr = text.substring(asteriskIndex + 1, offset);
+		substr = substr.replace('\'', ' ');
+		substr = substr.trim();
+		return substr.length() == 0; 
 	}
 
 	
@@ -178,32 +238,6 @@ public class WikiTextParser {
 			return new String[]{link.substring(0, link.lastIndexOf('|')), link.substring(link.lastIndexOf('|') + 1)};
 
 		return new String[]{link, null};
-	}
-
-	
-	/**
-	 * Returns whether the Wikipedia page with the given title is valid, meaning that it belongs to an allowed namespace.
-	 * @param title The title of a Wikipedia page.
-	 * @return {@code true} if the Wikipedia page with the given {@code title} is valid, {@code false} otherwise
-	 */
-	public boolean isValidPage(String title) {
-		return wikipediaPageNamespace(title) != Namespace.ANY;
-	}
-	
-	/**
-	 * Returns the namespace of a given Wikipedia page.
-	 * 
-	 * @param title The title of a Wikipedia page.
-	 * @return The namespace (one of the constants of class {@link Namespace}) of the Wikipedia page with the given {@code title}.
-	 */
-	public int wikipediaPageNamespace(String title) {
-		String name = Namespace.wikipediaPageNamespace(title);
-		if ( name.length() == 0 ) // the page belongs to the main namespace (it is an article)
-			return Namespace.MAIN;
-		for( Namespace namespace : namespaces )  
-			if ( namespace.name().equals(name) )
-				return namespace.id();
-		return Namespace.ANY;
 	}
 
 }

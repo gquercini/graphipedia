@@ -28,10 +28,11 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.graphipedia.dataimport.ProgressCounter;
-import org.graphipedia.dataimport.SimpleStaxParser;
-import org.graphipedia.dataimport.wikipedia.Namespace;
+import org.graphipedia.dataimport.wikipedia.Article;
+import org.graphipedia.dataimport.wikipedia.Category;
 import org.graphipedia.dataimport.wikipedia.Page;
 import org.graphipedia.dataimport.wikipedia.parser.IntermediateXmlFileTags;
+import org.graphipedia.dataimport.wikipedia.parser.SimpleStaxParser;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
@@ -40,7 +41,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
  *
  */
 public class LinkCreator extends SimpleStaxParser {
-	
+
 	/**
 	 * The connection to the Neo4j database where the links are imported.
 	 */
@@ -104,7 +105,8 @@ public class LinkCreator extends SimpleStaxParser {
 	 */
 	public LinkCreator(BatchInserter inserter,  Map<String, Page> inMemoryIndex, Logger logger) {
 		super(Arrays.asList(IntermediateXmlFileTags.page.toString(), IntermediateXmlFileTags.title.toString(), 
-				IntermediateXmlFileTags.link.toString(), IntermediateXmlFileTags.linkTitle.toString(), 
+				IntermediateXmlFileTags.regularlink.toString(), IntermediateXmlFileTags.dislink.toString(), 
+				IntermediateXmlFileTags.linkTitle.toString(), 
 				IntermediateXmlFileTags.anchor.toString(),
 				IntermediateXmlFileTags.offset.toString(), IntermediateXmlFileTags.rank.toString(), IntermediateXmlFileTags.infobox.toString(),
 				IntermediateXmlFileTags.intro.toString(), IntermediateXmlFileTags.occ.toString()),
@@ -148,7 +150,7 @@ public class LinkCreator extends SimpleStaxParser {
 
 
 	@Override
-	protected void handleElement(String element, String value) {
+	protected boolean handleElement(String element, String value) {
 		if (IntermediateXmlFileTags.page.toString().equals(element)) 
 			initializePage();
 		else
@@ -170,19 +172,24 @@ public class LinkCreator extends SimpleStaxParser {
 				this.intro = true;
 			else if (IntermediateXmlFileTags.occ.toString().equals(element))
 				this.occurrences = Integer.parseInt(value);
-			else if (IntermediateXmlFileTags.link.toString().equals(element)) {
-				createLink(this.sourceNode, this.targetNode);
+			else if (IntermediateXmlFileTags.regularlink.toString().equals(element)) {
+				createLink(this.sourceNode, this.targetNode, false);
 				initializeLinkAttributes();
 			}
-
+			else if (IntermediateXmlFileTags.dislink.toString().equals(element)) {
+				createLink(this.sourceNode, this.targetNode, true);
+				initializeLinkAttributes();
+			}
+		return true;	
 	}
-	
+
 	/**
 	 * Creates a link between two nodes corresponding to two Wikipedia pages.
 	 * @param sourceNode The Wikipedia page that is the source node of the link.
 	 * @param targetNode The Wikipedia page that is the target node of the link.
+	 * @param disambig Whether the new link is a disambiguation link.
 	 */
-	private void createLink(Page sourceNode, Page targetNode) {	
+	private void createLink(Page sourceNode, Page targetNode, boolean disambig) {	
 		if (targetNode == null)
 			return;
 		Map<String, Object> attributes = MapUtil.map(LinkAttribute.offset.name(), this.offset, LinkAttribute.rank.name(), this.rank,
@@ -193,19 +200,33 @@ public class LinkCreator extends SimpleStaxParser {
 			attributes.put(LinkAttribute.infobox.name(), this.infobox);
 		if ( this.intro )
 			attributes.put(LinkAttribute.intro.name(), this.intro);
+		if ( disambig )
+			attributes.put(LinkAttribute.disambig.name(), true);
 		if ( sourceNode.redirect() )
-			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.redirect, attributes);
-		else if ( sourceNode.namespace() == Namespace.MAIN && targetNode.namespace() == Namespace.CATEGORY )
-			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.belong, attributes);
-		else if ( sourceNode.namespace() == Namespace.CATEGORY && targetNode.namespace() == Namespace.CATEGORY )
-			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.child, attributes);
-		else
+			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.redirectTo, attributes);
+		else if ( sourceNode.isArticle() && targetNode.isCategory() ) {
+			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.belongTo, attributes);
+			sourceNode.incrementParents();
+			((Category)targetNode).incrementSize();
+		}
+		else if ( sourceNode.isCategory() && targetNode.isCategory() ) {
+			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.childOf, attributes);
+			sourceNode.incrementParents();
+			((Category)targetNode).incrementChildren();
+		}
+		else if ( sourceNode.isArticle() && targetNode.isArticle() ) {
 			inserter.createRelationship(sourceNode.neo4jId(), targetNode.neo4jId(), LinkType.link, attributes);
-		linkCounter.increment();
+			((Article)sourceNode).incrementOutdegree();
+			((Article)targetNode).incrementIndegree();
+		}
+		else
+			return;
+		linkCounter.increment("Creating links");
 
 	}
 
 	@Override
-	protected void handleElement(String element, String value, List<String> attributeValues) {
+	protected boolean handleElement(String element, String value, List<String> attributeValues) {
+		return true;
 	}
 }

@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,35 +19,8 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
-
-import org.neo4j.graphdb.Label;
-
 /**
- * Labels of the nodes in the Neo4j database.
+ * This package contains the main classes of Graphipedia.
  *
  */
-public enum NodeLabel implements Label {
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia article 
-	 * (page in the main namespace).
-	 */
-	Article,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia redirect page. 
-	 */
-	Redirect,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia disambiguation page.
-	 */
-	Disambig,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia
-	 * category.
-	 */
-	Category 
-}
+package org.graphipedia;

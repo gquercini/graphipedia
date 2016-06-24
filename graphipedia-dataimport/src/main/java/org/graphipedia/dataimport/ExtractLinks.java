@@ -24,6 +24,7 @@ package org.graphipedia.dataimport;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import javax.xml.stream.XMLOutputFactory;
@@ -32,6 +33,12 @@ import javax.xml.stream.XMLStreamWriter;
 import org.apache.commons.compress.compressors.CompressorOutputStream;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.codehaus.stax2.XMLOutputFactory2;
+import org.graphipedia.CheckPoint;
+import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.LoggerFactory;
+import org.graphipedia.dataimport.wikipedia.DisambiguationPages;
+import org.graphipedia.dataimport.wikipedia.InfoboxTemplates;
+import org.graphipedia.dataimport.wikipedia.Namespaces;
 
 /**
  * This thread parses the XML file containing a Wikipedia edition in a specific language and creates an 
@@ -54,7 +61,7 @@ public class ExtractLinks extends Thread {
 	/**
 	 * The settings of the program.
 	 */
-	private DataImportSettings settings;
+	private GraphipediaSettings settings;
 
 	/**
 	 * The code of the language of the Wikipedia edition being currently imported (e.g., en).
@@ -62,14 +69,43 @@ public class ExtractLinks extends Thread {
 	private String language;
 
 	/**
+	 * The disambiguation pages.
+	 */
+	private DisambiguationPages dp;
+
+	/**
+	 * The infobox templates.
+	 */
+	private InfoboxTemplates it;
+
+	/**
+	 * The namespaces.
+	 */
+	private Namespaces ns;
+	
+	/**
+	 * The checkpoint information of Graphipedia.
+	 */
+	private CheckPoint checkpoint;
+
+	/**
 	 * Creates a new thread to extract a specific Wikipedia language edition.
 	 * @param settings The general settings of Graphipedia.
 	 * @param language The code of the language of the Wikipedia edition being imported. 
+	 * @param dp The disambiguation pages.
+	 * @param it The infobox templates.
+	 * @param ns The namespaces.
+	 * @param checkpoint The checkpoint information of Graphipedia.
 	 */
-	public ExtractLinks(DataImportSettings settings, String language) {
+	public ExtractLinks(GraphipediaSettings settings, String language, 
+			DisambiguationPages dp, InfoboxTemplates it, Namespaces ns, CheckPoint checkpoint) {
 		this.settings = settings;
 		this.language = language;
 		this.logger = LoggerFactory.createLogger("Link Extractor (" + this.language.toUpperCase() + ")");
+		this.dp = dp;
+		this.it = it;
+		this.ns = ns;
+		this.checkpoint = checkpoint;
 	}
 
 	@Override
@@ -78,16 +114,20 @@ public class ExtractLinks extends Thread {
 		long startTime = System.currentTimeMillis();
 		XMLOutputFactory outputFactory = XMLOutputFactory2.newInstance();
 		File outputFile = new File(settings.wikipediaEditionDirectory(language), TEMPORARY_LINK_FILE); 
+		if (checkpoint.isLinksExtracted(this.language)) {
+			logger.info("Using pages and links from a previous computation");
+			return;
+		}
 
 		try {
 			FileOutputStream fout = new FileOutputStream(outputFile.getAbsolutePath());
-		    BufferedOutputStream bos = new BufferedOutputStream(fout);
-		    CompressorOutputStream output = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, bos);
-		    XMLStreamWriter writer = outputFactory.createXMLStreamWriter(output, "UTF-8");
+			BufferedOutputStream bos = new BufferedOutputStream(fout);
+			CompressorOutputStream output = new CompressorStreamFactory().createCompressorOutputStream(CompressorStreamFactory.BZIP2, bos);
+			XMLStreamWriter writer = outputFactory.createXMLStreamWriter(output, "UTF-8");
 			writer.writeStartDocument();
 			writer.writeStartElement("d");
 
-			LinkExtractor linkExtractor = new LinkExtractor(writer, logger, settings, language);
+			LinkExtractor linkExtractor = new LinkExtractor(writer, logger, settings, language, dp, it, ns);
 			linkExtractor.parse(settings.getWikipediaXmlFile(language).getAbsolutePath());
 
 			writer.writeEndElement();
@@ -96,11 +136,18 @@ public class ExtractLinks extends Thread {
 			fout.close();
 			bos.close();
 			writer.close();
-			long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-			logger.info(String.format("%d pages parsed in %d seconds.\n", linkExtractor.getPageCount(), elapsedSeconds));
+			long elapsed = System.currentTimeMillis() - startTime;
+			logger.info(String.format("%d pages parsed in " + ReadableTime.readableTime(elapsed) + "\n", linkExtractor.getPageCount()));
 		}
 		catch(Exception e) {
 			logger.severe("Error while parsing the XML file ");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		try {
+			checkpoint.addLinksExtracted(this.language, true);
+		} catch (IOException e) {
+			logger.severe("Error while saving the checkpoint to file");
 			e.printStackTrace();
 			System.exit(-1);
 		}

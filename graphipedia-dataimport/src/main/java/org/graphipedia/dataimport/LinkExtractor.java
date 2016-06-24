@@ -21,8 +21,6 @@
 //
 package org.graphipedia.dataimport;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,9 +30,14 @@ import java.util.logging.Logger;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 
+import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.dataimport.wikipedia.DisambiguationPages;
+import org.graphipedia.dataimport.wikipedia.InfoboxTemplates;
 import org.graphipedia.dataimport.wikipedia.Link;
 import org.graphipedia.dataimport.wikipedia.Namespace;
+import org.graphipedia.dataimport.wikipedia.Namespaces;
 import org.graphipedia.dataimport.wikipedia.parser.IntermediateXmlFileTags;
+import org.graphipedia.dataimport.wikipedia.parser.SimpleStaxParser;
 import org.graphipedia.dataimport.wikipedia.parser.WikiTextParser;
 import org.graphipedia.dataimport.wikipedia.parser.XmlFileTags;
 
@@ -80,12 +83,16 @@ public class LinkExtractor extends SimpleStaxParser {
 	 * The list of attribute values associated to a XML tag.
 	 */
 	private List<String> attributeValues;
-	
+
 	/**
-	 * The file where the names of the namespaces are saved so that they can be retrieved later
-	 * (to import cross-language links, geographic coordinates)...
+	 * The disambiguation pages.
 	 */
-	private File namespaceFile;
+	private DisambiguationPages dp;
+
+	/**
+	 * The namespaces.
+	 */
+	private Namespaces ns;
 
 	/**
 	 * Creates a new {@code LinkExtractor}.
@@ -94,28 +101,24 @@ public class LinkExtractor extends SimpleStaxParser {
 	 * @param settings The settings of the import.
 	 * @param language The code of the language of the Wikipedia edition for which the links are 
 	 * being extracted.
+	 * @param dp The disambiguation pages.
+	 * @param it The infobox templates.
+	 * @param ns The namespaces.
 	 */
-	public LinkExtractor(XMLStreamWriter writer, Logger logger, DataImportSettings settings, String language) {
+	public LinkExtractor(XMLStreamWriter writer, Logger logger, GraphipediaSettings settings, 
+			String language, DisambiguationPages dp, InfoboxTemplates it, Namespaces ns) {
 		super(Arrays.asList(XmlFileTags.page.toString(), XmlFileTags.title.toString(), 
 				XmlFileTags.text.toString(), XmlFileTags.id.toString()), 
-				Arrays.asList(XmlFileTags.redirect.toString(), XmlFileTags.namespace.toString()));
+				Arrays.asList(XmlFileTags.redirect.toString()));
 		this.writer = writer;
-		this.wikiTextParser = new WikiTextParser();
+		this.wikiTextParser = new WikiTextParser(ns, it, dp);
 		this.title = null;
 		this.text = null;
 		this.id = null;
 		this.attributeValues = new ArrayList<String>();
 		this.pageCounter = new ProgressCounter(logger);
-		this.namespaceFile = new File(settings.wikipediaEditionDirectory(language), Namespace.NAMESPACE_FILE);
-		if (namespaceFile.exists())
-			namespaceFile.delete();
-		try {
-			namespaceFile.createNewFile();
-		} catch (IOException e) {
-			logger.severe("Error while creating the file " + namespaceFile.getAbsolutePath());
-			e.printStackTrace();
-			System.exit(-1);
-		}
+		this.dp = dp;
+		this.ns = ns;
 	}
 
 	/**
@@ -128,17 +131,15 @@ public class LinkExtractor extends SimpleStaxParser {
 	}
 
 	@Override
-	protected void handleElement(String element, String value) {
+	protected boolean handleElement(String element, String value) throws XMLStreamException {
 		if (XmlFileTags.page.toString().equals(element)) {
-			if (wikiTextParser.isValidPage(title)) {
-				try {
-					if ( attributeValues.size() > 0 ) // we have a redirect page
-						writeRedirectPage(title, id, attributeValues.get(0));
-					else
-						writePage(title, id, text); /// regular Wikipedia page.
-				} catch (XMLStreamException streamException) {
-					throw new RuntimeException(streamException);
-				}
+			Namespace pageNamespace = ns.wikipediaPageNamespace(title); 
+			if ( pageNamespace.id() == Namespace.CATEGORY || 
+					pageNamespace.id() == Namespace.MAIN ) {
+				if ( attributeValues.size() > 0 ) // we have a redirect page
+					writeRedirectPage(title, id, attributeValues.get(0));
+				else
+					writePage(title, id, text); /// regular Wikipedia page.
 			}
 			title = null;
 			text = null;
@@ -152,30 +153,17 @@ public class LinkExtractor extends SimpleStaxParser {
 			if (id == null) // there are multiple ids that are specified in the input file, the first is the one associated with the page, the others with the revisions...
 				id = value;
 		}
+		return true;
 	}
-	
+
 	@Override
-	protected void handleElement(String element, String value,
-			List<String> attributeValues) {
-		// Parsing a namespace name and local name
-		if ( XmlFileTags.namespace.toString().equals(element) ) {
-			int namespaceId = Integer.parseInt(attributeValues.get(0));
-			Namespace namespace = new Namespace(namespaceId, value);
-			if ( namespace.isMain() || namespace.isCategory() ) {
-				wikiTextParser.addNamespace(namespace);
-				try {
-					namespace.writeNamespaceToFile(namespaceFile);
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
-		else
+	protected boolean handleElement(String element, String value,
+			List<String> attributeValues) throws XMLStreamException {
 		if ( XmlFileTags.redirect.toString().equals(element) ) 
 			this.attributeValues = attributeValues;
-		
+		return true;
 	}
-	
+
 	/**
 	 * Writes the information extracted from a Wikipedia redirect page to the output file.
 	 * 
@@ -194,24 +182,24 @@ public class LinkExtractor extends SimpleStaxParser {
 		writer.writeStartElement(IntermediateXmlFileTags.id.toString());
 		writer.writeCharacters(id);
 		writer.writeEndElement();
-		
+
 		writer.writeStartElement(IntermediateXmlFileTags.redirect.toString());
 		writer.writeCharacters("t");
 		writer.writeEndElement();
-		
+
 		writer.writeStartElement(IntermediateXmlFileTags.namespace.toString());
-		writer.writeCharacters(Integer.toString(wikiTextParser.wikipediaPageNamespace(title)));
+		writer.writeCharacters(Integer.toString(ns.wikipediaPageNamespace(title).id()));
 		writer.writeEndElement();
-		
-		writer.writeStartElement(IntermediateXmlFileTags.link.toString());
+
+		writer.writeStartElement(IntermediateXmlFileTags.regularlink.toString());
 		writer.writeStartElement(IntermediateXmlFileTags.linkTitle.toString()); // title of target redirect page
 		writer.writeCharacters(targetRedirect);
 		writer.writeEndElement();
 		writer.writeEndElement();
-		
+
 		writer.writeEndElement(); // end page
 
-		pageCounter.increment();
+		pageCounter.increment("Parsing pages");
 	}
 
 
@@ -233,14 +221,23 @@ public class LinkExtractor extends SimpleStaxParser {
 		writer.writeStartElement(IntermediateXmlFileTags.id.toString());
 		writer.writeCharacters(id);
 		writer.writeEndElement();
-		
+
+		if ( this.dp.isDisambiguationPage(title) ) {
+			writer.writeStartElement(IntermediateXmlFileTags.disambig.toString());
+			writer.writeCharacters("t");
+			writer.writeEndElement();
+		}
+
 		writer.writeStartElement(IntermediateXmlFileTags.namespace.toString());
-		writer.writeCharacters(Integer.toString(wikiTextParser.wikipediaPageNamespace(title)));
+		writer.writeCharacters(Integer.toString(ns.wikipediaPageNamespace(title).id()));
 		writer.writeEndElement();
 
 		Set<Link> links = wikiTextParser.parse(title, text);
 		for (Link link : links )  {
-			writer.writeStartElement(IntermediateXmlFileTags.link.toString()); // begin link
+			if ( link.isRegularLink() )
+				writer.writeStartElement(IntermediateXmlFileTags.regularlink.toString()); // begin link
+			else
+				writer.writeStartElement(IntermediateXmlFileTags.dislink.toString()); // begin link
 
 			writer.writeStartElement(IntermediateXmlFileTags.linkTitle.toString()); // title of the target page of the link
 			writer.writeCharacters(link.targetTitle());
@@ -279,6 +276,6 @@ public class LinkExtractor extends SimpleStaxParser {
 			writer.writeEndElement(); // end link
 		}
 		writer.writeEndElement(); // end page
-		pageCounter.increment();
+		pageCounter.increment("Parsing pages");
 	}
 }

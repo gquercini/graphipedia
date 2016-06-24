@@ -27,10 +27,11 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.logging.Logger;
 
-import org.graphipedia.dataimport.DataImportSettings;
+import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.LoggerFactory;
 import org.graphipedia.dataimport.ExtractCrossLinks;
-import org.graphipedia.dataimport.LoggerFactory;
 import org.graphipedia.dataimport.ProgressCounter;
+import org.graphipedia.dataimport.ReadableTime;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**
@@ -68,7 +69,7 @@ public class ImportCrossLinks extends Thread {
 	 * @param inserter The connection to the Neo4j database.
 	 * @param language The language of the Wikipedia edition being currently imported.
 	 */
-	public ImportCrossLinks(DataImportSettings settings, BatchInserter inserter, String language ) {
+	public ImportCrossLinks(GraphipediaSettings settings, BatchInserter inserter, String language ) {
 		this.inserter = inserter;
 		this.crossLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractCrossLinks.OUTPUT_FILE_NAME);
 		this.logger = LoggerFactory.createLogger("Import crosslinks  (" + language.toUpperCase() + ")");
@@ -86,7 +87,7 @@ public class ImportCrossLinks extends Thread {
 				long firstNode = Long.parseLong(nodes[0]);
 				long secondNode = Long.parseLong(nodes[1]);
 				inserter.createRelationship(firstNode, secondNode, LinkType.crosslink, null);
-				linkCounter.increment();
+				linkCounter.increment("Cross-links ");
 			}
 			bd.close();
 		}
@@ -95,8 +96,8 @@ public class ImportCrossLinks extends Thread {
 			e.printStackTrace();
 			System.exit(-1);
 		}
-		long elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000;
-		logger.info(String.format("%d links imported in %d seconds.\n", linkCounter.getCount(), elapsedSeconds));
+		long elapsed = System.currentTimeMillis() - startTime;
+		logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed) + "\n", linkCounter.getCount()));
 	}
 
 }

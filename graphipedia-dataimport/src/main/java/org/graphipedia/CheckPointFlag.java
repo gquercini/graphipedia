@@ -19,73 +19,48 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
+
+package org.graphipedia;
+
 
 /**
- * Enumerates the attributes of a node in Neo4j.
- * Each node corresponds to a Wikipedia page.
+ * Enumerates all the checkpoint flags.
+ *
  */
-public enum NodeAttribute {
+public enum CheckPointFlag {
+	/**
+	 * Indicates a successful file download.
+	 */
+	fileDownload,
 	
 	/**
-	 * The title of the page corresponding to a node.
+	 * Indicates a successful download of a Wikipedia edition.
 	 */
-	title,
+	editionDownload,
 	
 	/**
-	 * The language of the page corresponding to a node.
+	 * Indicates that the disambiguation pages have already been obtained from 
+	 * Wikipedia.
 	 */
-	lang,
+	disambigExtracted,
 	
 	/**
-	 * The identifier in Wikipedia of the page corresponding to a node.
+	 * Indicates that the infobox templates have already been obtained from 
+	 * Wikipedia.
 	 */
-	wikiid,
+	infoboxExtracted,
 	
 	/**
-	 * The number of articles to which an article links.
+	 * Indicates that the links have been extracted from the XML file 
+	 * of a Wikipedia edition.
 	 */
-	outdegree,
+	linksExtracted,
 	
 	/**
-	 * The number of articles that are linked by an article.
+	 * Indicates that the cross-links have been extracted from the dump file 
+	 * of a Wikipedia edition.
 	 */
-	indegree,
+	crosslinksExtracted
 	
-	/**
-	 * The number of categories that are parent of an article or a category.
-	 */
-	parents,
 	
-	/**
-	 * The number of categories that are children of a category.
-	 */
-	children,
-	
-	/**
-	 * The number of articles that a category contains.
-	 */
-	size,
-	
-	/**
-	 * The globe of a spatial entity, if the article is about a spatial entity.
-	 */
-	globe,
-	
-	/**
-	 * The latitude of a spatial entity, if the article is about a spatial entity.
-	 */
-	latitude,
-	
-	/**
-	 * The longitude of a spatial entity, if the article is about a spatial entity.
-	 */
-	longitude,
-	
-	/**
-	 * The type of a spatial entity, if the article is about a spatial entity.
-	 */
-	type
-	
-
 }

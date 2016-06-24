@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,35 +19,51 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
-
-import org.neo4j.graphdb.Label;
+package org.graphipedia.download;
 
 /**
- * Labels of the nodes in the Neo4j database.
+ * A progress bar to display the progress of the download of a file.
  *
  */
-public enum NodeLabel implements Label {
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia article 
-	 * (page in the main namespace).
+public class DownloadProgress {
+	/** 
+	 * The maximum value corresponding to a 100% progress.
 	 */
-	Article,
-	
+	private double maxValue;
+
 	/**
-	 * Label associated to a node corresponding to a Wikipedia redirect page. 
+	 * The current progress of a task (percent).
 	 */
-	Redirect,
-	
+	private double progress;
+
 	/**
-	 * Label associated to a node corresponding to a Wikipedia disambiguation page.
+	 * Creates a new {@code ProgressBar}, initialized to 0%.
+	 * 
+	 * @param maxValue The maximum value, corresponding to a
+	 * 100% progress.
 	 */
-	Disambig,
-	
+	public DownloadProgress(double maxValue) {
+		this.maxValue = maxValue;
+		this.progress = 0.;
+		System.out.println();
+	}
+
 	/**
-	 * Label associated to a node corresponding to a Wikipedia
-	 * category.
+	 * Displays the progress bar, based on the current value.
+	 * 
+	 * @param currentValue The current progress (percent). 
 	 */
-	Category 
+	public void visualize(double currentValue) {
+		if ( currentValue == 0 )
+			System.out.println();
+		double currentProgress = Math.floor(currentValue / maxValue * 100.);
+
+		if (currentProgress > progress) {
+			progress = currentProgress;
+			for( int k = 0; k < progress; k += 5 )
+				System.out.print("|");
+
+			System.out.print(" <-- " + progress + "% Complete --> \r");
+		}
+	}
 }

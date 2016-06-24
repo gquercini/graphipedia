@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2012 Mirko Nasato
+// Copyright (c) 2016 Gianluca Quercini
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,35 +19,32 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataimport.neo4j;
-
-import org.neo4j.graphdb.Label;
+package org.graphipedia.dataimport.wikipedia;
 
 /**
- * Labels of the nodes in the Neo4j database.
+ * A link between a disambiguation page and another page (possibly, another disambiguation page) 
+ * that provides a possible interpretation of the word which the disambiguation page is about.
  *
  */
-public enum NodeLabel implements Label {
-	
+public class DisambiguationLink extends Link {
+
 	/**
-	 * Label associated to a node corresponding to a Wikipedia article 
-	 * (page in the main namespace).
+	 * Creates a new disambiguation link.
+	 * @param sourceTitle The title of the source page.
+	 * @param targetTitle The title of the target page.
+	 * @param offset The offset of the link  in the source page.
+	 * @param rank The rank of the links in the source page.
+	 * @param infobox Whether the link occurs in the infobox of the source page.
+	 * @param intro Whether the link occurs in the introduction of the source page.
 	 */
-	Article,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia redirect page. 
-	 */
-	Redirect,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia disambiguation page.
-	 */
-	Disambig,
-	
-	/**
-	 * Label associated to a node corresponding to a Wikipedia
-	 * category.
-	 */
-	Category 
+	public DisambiguationLink(String sourceTitle, String targetTitle, int offset, int rank, boolean infobox,
+			boolean intro) {
+		super(sourceTitle, targetTitle, offset, rank, infobox, intro);
+	}
+
+	@Override
+	public boolean isRegularLink() {
+		return false;
+	}
+
 }

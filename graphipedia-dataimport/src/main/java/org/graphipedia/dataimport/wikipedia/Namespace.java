@@ -21,14 +21,6 @@
 //
 package org.graphipedia.dataimport.wikipedia;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.graphipedia.dataimport.LinkExtractor;
 
@@ -235,9 +227,9 @@ public class Namespace {
 	private int id;
 
 	/**
-	 * The name of this namespace
+	 * The title of this namespace
 	 */
-	private String name;
+	private String title;
 
 	/**
 	 * Creates a new namespace.
@@ -246,7 +238,7 @@ public class Namespace {
 	 */
 	public Namespace(int id, String name) {
 		this.id = id;
-		this.name = name;
+		this.title = name;
 	}
 
 	/**
@@ -258,73 +250,25 @@ public class Namespace {
 	}
 
 	/**
-	 * Returns the name of this namespace.
-	 * @return The name of this namespace.
+	 * Returns the title of this namespace.
+	 * @return The title of this namespace.
 	 */
-	public String name() {
-		return this.name;
+	public String title() {
+		return this.title;
 	}
 
-	/**
-	 * Returns whether this namespace is the main namespace.
-	 * @return {@code true} if this namespace is the main namespace, {@code false} otherwise.
-	 */
-	public boolean isMain() {
-		return this.id == MAIN;
+	
+	@Override
+	public boolean equals(Object o) {
+		if ( !(o instanceof Namespace) )
+			return false;
+		Namespace n = (Namespace)o;
+		return this.id == n.id;
 	}
-
-	/**
-	 * Returns whether this namespace is the category namespace.
-	 * @return {@code true} if this namespace is the category namespace, {@code false} otherwise.
-	 */
-	public boolean isCategory() {
-		return this.id == CATEGORY;
-	}
-
-	/**
-	 * Writes this namespace to the CSV file that records the namespaces for convenience.
-	 * @param namespaceFile The namespace file.
-	 * @throws IOException when something goes wrong while writing to file.
-	 */
-	public void writeNamespaceToFile(File namespaceFile) throws IOException {
-		BufferedWriter bw = new BufferedWriter(new FileWriter(namespaceFile, true));
-		bw.write(id() + "," + name() + "\n");
-		bw.close();
-	}
-
-	/**
-	 * Reads the namespaces from the CSV file recording the namespaces. 
-	 * @param namespaceFile The namespace file.
-	 * @return A map, where the keys are the namespace names and the values are the corresponding namespaces.
-	 * @throws IOException  when something goes wrong while reading the file.
-	 */
-	public static Map<String, Namespace> getNamespacesFromFile(File namespaceFile) throws IOException {
-		Map<String, Namespace> namespaces = new HashMap<String, Namespace>();
-		BufferedReader ns = new BufferedReader(new FileReader(namespaceFile));
-		String line;
-		while( (line = ns.readLine()) != null ) {
-			String [] values = line.split(",");
-			int id = Integer.parseInt(values[0]);
-			String name = values[1];
-			namespaces.put(name, new Namespace(id, name));
-		}
-		ns.close();
-		return namespaces;
-	}
-
-	/**
-	 * Returns the namespace of a given Wikipedia page.
-	 * This is the string preceding the colon (:) in a the title, or the empty string if the page
-	 * is an article in the main namespace. 
-	 * 
-	 * @param title The title of a Wikipedia page.
-	 * @return The namespace of the page.
-	 */
-	public static String wikipediaPageNamespace(String title) {
-		int colonIndex = title.indexOf(":"); 
-		if ( colonIndex < 0 ) // the page belongs to the main namespace (it is an article)
-			return "";
-		return title.substring(0, colonIndex);
+	
+	@Override
+	public int hashCode() {
+		return this.id;
 	}
 
 }
