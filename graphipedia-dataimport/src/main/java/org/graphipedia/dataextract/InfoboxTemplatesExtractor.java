@@ -70,12 +70,14 @@ public class InfoboxTemplatesExtractor extends Thread {
 	 * infobox templates are searched.
 	 * @param rootCategory The name of the category that contains all the infobox templates.
 	 * @param checkpoint The checkpoint information of Graphipedia.
+	 * @param loggerMessageSuffix A suffix appended to all the messages of the logger.
 	 */
-	public InfoboxTemplatesExtractor(GraphipediaSettings settings, String language, String rootCategory, CheckPoint checkpoint) {
+	public InfoboxTemplatesExtractor(GraphipediaSettings settings, String language, 
+			String rootCategory, CheckPoint checkpoint, String loggerMessageSuffix) {
 		this.infoboxTemplates = new InfoboxTemplates(settings.wikipediaEditionDirectory(language));
 		this.language = language;
 		this.rootCategory = rootCategory;
-		this.logger = LoggerFactory.createLogger("Infobox Extractor (" + this.language.toUpperCase() + ")");
+		this.logger = LoggerFactory.createLogger("Infobox Extractor (" + loggerMessageSuffix + ")");
 		this.checkpoint = checkpoint;
 	}
 
@@ -98,7 +100,7 @@ public class InfoboxTemplatesExtractor extends Thread {
 		}
 		else {
 			try {
-				this.infoboxTemplates.load(language, rootCategory, itFile);
+				this.infoboxTemplates.load(language, rootCategory, itFile, logger);
 			} catch (Exception e) {
 				logger.severe("Error while reading the infobox templates from MediaWiki");
 				e.printStackTrace();

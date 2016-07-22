@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import org.graphipedia.GraphipediaSettings;
-import org.graphipedia.dataextract.ExtractLinks;
+import org.graphipedia.dataextract.ExtractData;
 import org.graphipedia.progress.LoggerFactory;
 import org.graphipedia.progress.ReadableTime;
 import org.graphipedia.wikipedia.Geotags;
@@ -36,7 +36,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**
  * This thread imports a Wikipedia language edition as a graph into a Neo4j database.
- * The input to this thread is the temporary link file created by the thread {@link ExtractLinks}.  
+ * The input to this thread is the temporary link file created by the thread {@link ExtractData}.  
  *
  */
 public class ImportGraph extends Thread {
@@ -53,7 +53,7 @@ public class ImportGraph extends Thread {
     private String language;
     
     /**
-     * The temporary link file created by the thread {@link ExtractLinks}.
+     * The temporary link file created by the thread {@link ExtractData}.
      */
     private File temporaryLinkFile;
     
@@ -79,13 +79,15 @@ public class ImportGraph extends Thread {
      * @param settings The settings of Graphipedia.
      * @param language The code of the language of the Wikipedia edition being imported.
      * @param geotags The geotags associated to Wikipedia pages that describe spatial entities.
+     * @param loggerMessageSuffix A suffix to append to the message displayed by the logger.
      */
-    public ImportGraph(BatchInserter inserter, GraphipediaSettings settings, String language, Map<String, Geotags> geotags) {
+    public ImportGraph(BatchInserter inserter, GraphipediaSettings settings, String language, 
+    		Map<String, Geotags> geotags, String loggerMessageSuffix) {
     	this.language = language;
     	this.inserter = inserter;
-        inMemoryIndex = new HashMap<String, Page>();
-        this.logger = LoggerFactory.createLogger("Graph import [" + this.language.toUpperCase() + "]");
-        this.temporaryLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractLinks.TEMPORARY_LINK_FILE);
+        this.inMemoryIndex = new HashMap<String, Page>();
+        this.logger = LoggerFactory.createLogger("Graph import (" + loggerMessageSuffix + ")");
+        this.temporaryLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractData.TEMPORARY_LINK_FILE);
         this.geotags = geotags;
     }
 
@@ -119,7 +121,7 @@ public class ImportGraph extends Thread {
         long startTime = System.currentTimeMillis();
         nodeCreator.parse(temporaryLinkFile.getAbsolutePath());
         long elapsed = System.currentTimeMillis() - startTime;
-        logger.info(String.format("%d pages imported in "+ ReadableTime.readableTime(elapsed) +"\n", nodeCreator.getPageCount()));
+        logger.info(String.format("%d pages imported in "+ ReadableTime.readableTime(elapsed), nodeCreator.getPageCount()));
     }
 
     /**
@@ -132,7 +134,7 @@ public class ImportGraph extends Thread {
         long startTime = System.currentTimeMillis();
         linkCreator.parse(temporaryLinkFile.getAbsolutePath());
         long elapsed = System.currentTimeMillis() - startTime;
-        logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed) + "\n", linkCreator.getLinkCount()));
+        logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed), linkCreator.getLinkCount()));
     }
     
     /**
@@ -144,7 +146,7 @@ public class ImportGraph extends Thread {
     	long startTime = System.currentTimeMillis();
     	updater.update();
     	long elapsed = System.currentTimeMillis() - startTime;
-    	logger.info(String.format("%d nodes updated in " + ReadableTime.readableTime(elapsed) + "\n", updater.getNodeCount()));
+    	logger.info(String.format("%d nodes updated in " + ReadableTime.readableTime(elapsed), updater.getNodeCount()));
     }
 
 }

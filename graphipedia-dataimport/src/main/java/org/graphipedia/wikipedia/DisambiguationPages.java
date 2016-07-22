@@ -10,7 +10,10 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Timer;
+import java.util.logging.Logger;
 
+import org.graphipedia.dataextract.PleaseWait;
 import org.wikipedia.Wiki;
 
 /**
@@ -95,29 +98,52 @@ public class DisambiguationPages {
 	 * @param language The code of the language edition to import.
 	 * @param rootCategory The root category that contains the disambiguation pages.
 	 * @param outputFile The file where the list of disambiguation pages is written.
+	 * @param logger The logger of Graphipedia.
 	 * @throws IOException when something goes wrong while using the MediaWiki API or creating the output file.
 	 */
-	public void load(String language, String rootCategory, File outputFile) throws IOException {
+	public void load(String language, String rootCategory, File outputFile, Logger logger) throws IOException {
 		BufferedWriter bw = new BufferedWriter(new FileWriter(outputFile));
 		Set<String> visitedCategories = new HashSet<String>();
 		Wiki wiki = new Wiki(language + ".wikipedia.org");
 		List<String> categories = new ArrayList<String>();
 		categories.add(rootCategory);
+		Timer timer = new Timer();
+		PleaseWait pleaseWait = new PleaseWait(logger);
+		timer.schedule(pleaseWait, 0, 10000);
 		for ( int i = 0; i < categories.size(); i += 1 ) {
 			String currentCategory = categories.get(i);
-			String[] cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
+			String[] cats = null;
+			do {
+				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
+			} while (cats == null);
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			for (String cat : cats) 
 				if ( !visitedCategories.contains(cat) ) {
 					visitedCategories.add(cat);
 					categories.add(cat);
 				}
-			String[] disambiguationPages = wiki.getCategoryMembers(currentCategory, Namespace.MAIN);
+			String[] disambiguationPages = null;
+			do {
+				disambiguationPages = wiki.getCategoryMembers(currentCategory, Namespace.MAIN);
+			}
+			while( disambiguationPages == null );
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 			for ( String page : disambiguationPages ) { 
 					this.disambiguationPages.add(page);
+					pleaseWait.addDetails("disambiguation pages extracted so far " + this.disambiguationPages.size());
 					bw.write(page + "\n");
 			}
 
 		}
+		timer.cancel();
 		bw.close();
 	}
 	

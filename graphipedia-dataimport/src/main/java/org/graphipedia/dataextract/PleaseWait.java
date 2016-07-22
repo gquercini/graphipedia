@@ -19,34 +19,53 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.wikipedia.parser;
+package org.graphipedia.dataextract;
 
-import org.graphipedia.wikipedia.Introduction;
+import java.util.TimerTask;
+import java.util.logging.Logger;
+
+
 
 /**
- * A parser of the introduction of a Wikipedia page.
+ * This class is used when Graphipedia is downloading the disambiguation pages
+ * and the infobox templates from Wikipedia, using the MediaWiki API, which might take a while.
  *
  */
-public class IntroductionParser {
-
+public class PleaseWait extends TimerTask {
+	
 	/**
-	 * The way the header of a section is specified in the wiki text of a Wikipedia page.
+	 * The logger of Graphipedia
 	 */
-	private static String SECTION_HEAD = "==";
-
+	private Logger logger;
+	
 	/**
-	 * Parses the wiki text of a Wikipedia page and returns its introduction.
-	 * @param text The text of a Wikipedia page.
-	 * @return The introduction of the Wikipedia page.
+	 * Details about the progress of the task that takes a while.
 	 */
-	public Introduction parse(String text) {
-		int startIntro = 0;
-		int endIntro = text.indexOf(SECTION_HEAD); // the end of the introduction is the beginning of the second section.
-		if (endIntro <= 0) // The whole article is just one section or empty. This happens mostly for stubs.
-			return null;
-		return new Introduction(text.substring(startIntro, endIntro), startIntro, endIntro);
+	private String details;
+	
+	/**
+	 * Constructor.
+	 * @param logger The logger of Graphipedia.
+	 */
+	public PleaseWait(Logger logger) {
+		this.logger = logger;
+		this.details = "";
 	}
 
+	@Override
+	public void run() {
+		if ( details.length() == 0 )
+			logger.info("Still working");
+		else
+			logger.info("Still working, " + details);
+	}
+	
+	/**
+	 * Adds some details to the progress of the task.
+	 * @param details The details to display.
+	 */
+	public void addDetails(String details) {
+		this.details = details;
+	}
 
 }
-

@@ -147,7 +147,8 @@ public class CheckPoint {
 	 */
 	public void addDisambiguationExtracted(String edition, boolean save) throws IOException {
 		this.disambigExtracted.add(edition);
-		save(CheckPointFlag.disambigExtracted, edition);
+		if (save)
+			save(CheckPointFlag.disambigExtracted, edition);
 	}
 	
 	/**

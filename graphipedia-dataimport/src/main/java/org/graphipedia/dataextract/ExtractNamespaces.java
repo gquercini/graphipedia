@@ -57,12 +57,13 @@ public class ExtractNamespaces extends Thread {
 	 * Creates a new thread to extract the namespaces of a Wikipedia language edition.
 	 * @param settings The general settings of Graphipedia.
 	 * @param language The code of the language of the Wikipedia edition being imported. 
+	 * @param loggerMessageSuffix A suffix apppended to all the messages of the logger.
 	 */
-	public ExtractNamespaces(GraphipediaSettings settings, String language) {
+	public ExtractNamespaces(GraphipediaSettings settings, String language, String loggerMessageSuffix) {
 		this.namespaces = new Namespaces();
 		this.settings = settings;
 		this.language = language;
-		this.logger = LoggerFactory.createLogger("Namespace Extractor (" + this.language.toUpperCase() + ")");
+		this.logger = LoggerFactory.createLogger("Namespace Extractor (" + loggerMessageSuffix + ")");
 	}
 	
 	@Override

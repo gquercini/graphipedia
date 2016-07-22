@@ -70,12 +70,14 @@ public class DisambiguationPageExtractor extends Thread {
 	 * disambiguation pages are searched.
 	 * @param rootCategory The name of the category that contains all the disambiguation pages.
 	 * @param checkpoint The checkpoint information of Graphipedia.
+	 * @param loggerMessageSuffix A suffix appended to the messages of the logger.
 	 */
-	public DisambiguationPageExtractor(GraphipediaSettings settings, String language, String rootCategory, CheckPoint checkpoint) {
+	public DisambiguationPageExtractor(GraphipediaSettings settings, String language, 
+			String rootCategory, CheckPoint checkpoint, String loggerMessageSuffix) {
 		this.disambiguationPages = new DisambiguationPages(settings.wikipediaEditionDirectory(language));
 		this.language = language;
 		this.rootCategory = rootCategory;
-		this.logger = LoggerFactory.createLogger("Disambig Extractor (" + this.language.toUpperCase() + ")");
+		this.logger = LoggerFactory.createLogger("Disambig Extractor (" + loggerMessageSuffix + ")");
 		this.checkpoint = checkpoint;
 	}
 
@@ -98,9 +100,9 @@ public class DisambiguationPageExtractor extends Thread {
 		}
 		else {
 			try {
-				this.disambiguationPages.load(language, rootCategory, dpFile);
+				this.disambiguationPages.load(language, rootCategory, dpFile, logger);
 			} catch (Exception e) {
-				logger.severe("Error while obtaining the disambiguation pages");
+				logger.severe("Error while obtaining the disambiguation pages from MediaWiki");
 				e.printStackTrace();
 				System.exit(-1);
 			}

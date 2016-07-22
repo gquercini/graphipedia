@@ -21,8 +21,10 @@
 //
 package org.graphipedia.download;
 
+import java.util.logging.Logger;
+
 /**
- * A progress bar to display the progress of the download of a file.
+ * Displays the progress of the download of a file.
  *
  */
 public class DownloadProgress {
@@ -45,11 +47,23 @@ public class DownloadProgress {
 	public DownloadProgress(double maxValue) {
 		this.maxValue = maxValue;
 		this.progress = 0.;
-		System.out.println();
 	}
 
 	/**
-	 * Displays the progress bar, based on the current value.
+	 * Visualizes the progress with the given logger.
+	 * @param currentValue The current progress (percent).
+	 * @param logger The logger used to visualize the progress.
+	 */
+	public void visualize(double currentValue, Logger logger) {
+		double currentProgress = Math.floor(currentValue / maxValue * 100.);
+		if (currentProgress > progress) {
+			progress = currentProgress;
+			logger.info(progress + "% Complete");
+		}
+	}
+	
+	/**
+	 * Displays a progress bar, based on the current value.
 	 * 
 	 * @param currentValue The current progress (percent). 
 	 */

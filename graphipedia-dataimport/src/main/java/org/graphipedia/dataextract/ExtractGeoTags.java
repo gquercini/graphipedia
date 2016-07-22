@@ -41,7 +41,7 @@ public class ExtractGeoTags extends Thread {
 	/**
 	 * Pattern to extract the geotag attached to a spatial entity.   
 	 */
-	private static final Pattern GEO_TAG_PATTERN = Pattern.compile("\\((.+?),(.+?),'(.*?)',(.+?),(.+?),(.+?),(.+?),(.+?),(.+?),(.+?),(.+?)\\)");
+	private static final Pattern GEO_TAG_PATTERN = Pattern.compile("\\((.+?),(.+?),(?<!\\\\)'(.*?)(?<!\\\\)',(.+?),(.+?),(.+?),(.+?),((?<!\\\\)'(.*?)(?<!\\\\)'|NULL),((?<!\\\\)'(.*?)(?<!\\\\)'|NULL),((?<!\\\\)'(.*?)(?<!\\\\)'|NULL),((?<!\\\\)'(.*?)(?<!\\\\)'|NULL)\\)");
 
 	/**
 	 * The logger of this thread.
@@ -67,12 +67,13 @@ public class ExtractGeoTags extends Thread {
 	 * Creates a new thread.
 	 * @param settings The settings of the import.
 	 * @param language The code of the language of the Wikipedia edition being currently imported.
+	 * @param loggerMessageSuffix A suffix appended to all messages of the logger.
 	 */
-	public ExtractGeoTags(GraphipediaSettings settings, String language) {
+	public ExtractGeoTags(GraphipediaSettings settings, String language, String loggerMessageSuffix) {
 		this.geoTags = new HashMap<String, Geotags>();
 		this.settings = settings;
 		this.language = language;
-		this.logger = LoggerFactory.createLogger("Extract geotags  (" + language.toUpperCase() + ")");
+		this.logger = LoggerFactory.createLogger("Extract geotags  (" + loggerMessageSuffix + ")");
 		this.pageCounter = new ProgressCounter(this.logger);
 	}
 
@@ -97,7 +98,7 @@ public class ExtractGeoTags extends Thread {
 			System.exit(-1);
 		}
 		long elapsed = System.currentTimeMillis() - startTime;
-		logger.info(String.format("geotags for %d pages extracted in "+ ReadableTime.readableTime(elapsed) +"\n", pageCounter.getCount()));
+		logger.info(String.format("geotags for %d pages extracted in "+ ReadableTime.readableTime(elapsed), pageCounter.getCount()));
 	}
 
 	/**
@@ -143,7 +144,6 @@ public class ExtractGeoTags extends Thread {
 		}
 		inputStream.close();
 		bd.close();
-
 	}
 
 	/**

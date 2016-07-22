@@ -30,7 +30,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -128,20 +127,19 @@ public class ExtractCrossLinks extends Thread {
 	 * @param namespaces The namespaces of the Wikipedia edition languages to import.
 	 * @param currentLanguage An index in the array {@code languages}, indicating the current Wikipedia language edition.  
 	 * @param checkpoint The checkpoint information of Graphipedia.
+	 * @param loggerSuffix A suffix appended to the messages of the logger.
 	 */
 	public ExtractCrossLinks(GraphDatabaseService graphDb, GraphipediaSettings settings, String[] languages, 
-			Namespaces[] namespaces, int currentLanguage, CheckPoint checkpoint) {
+			Map<String, Namespaces> namespaces, String currentLanguage, CheckPoint checkpoint, String loggerSuffix) {
 		this.graphDb = graphDb;
 		this.settings = settings;
 		this.languages = new HashSet<String>();
-		this.namespaces = new HashMap<String, Namespaces>();
-		for (  int i = 0; i < languages.length ; i += 1) {
+		this.namespaces = namespaces;
+		for (  int i = 0; i < languages.length ; i += 1) 
 			this.languages.add(languages[i]);
-			this.namespaces.put(languages[i], namespaces[i]);
-		}
 
-		this.currentLanguage = languages[currentLanguage];
-		logger = LoggerFactory.createLogger("Extract crosslinks  (" + this.currentLanguage.toUpperCase() + ")");
+		this.currentLanguage = currentLanguage;
+		logger = LoggerFactory.createLogger("Extract crosslinks  (" + loggerSuffix + ")");
 		linkCounter = new ProgressCounter(logger);
 		this.checkpoint = checkpoint;
 	}
@@ -181,7 +179,7 @@ public class ExtractCrossLinks extends Thread {
 		}
 		settings.getCrossLinkFile(currentLanguage).delete();
 		long elapsed = System.currentTimeMillis() - startTime;
-		logger.info(String.format("%d links extracted in "+ ReadableTime.readableTime(elapsed) +"\n", linkCounter.getCount()));
+		logger.info(String.format("%d links extracted in "+ ReadableTime.readableTime(elapsed), linkCounter.getCount()));
 	}
 
 	/**
@@ -278,7 +276,6 @@ public class ExtractCrossLinks extends Thread {
 		}
 		return -1L;
 	}
-
 
 }
 

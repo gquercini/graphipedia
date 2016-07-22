@@ -38,6 +38,8 @@ import org.graphipedia.progress.ReadableTime;
  *
  */
 public class WikipediaEdition {
+	
+	
 	/**
 	 * The base URL of the web page that contains the dump files of a Wikipedia language edition.
 	 */
@@ -176,8 +178,8 @@ public class WikipediaEdition {
 			return false;
 		}
 		if ( dump == null ) {
-			logger.warning("No complete dump available");
-			return true;
+			logger.severe("No complete dump available");
+			return false;
 		}
 		String dumpDate = dump.date();
 		logger.info("Date of last complete dump " + dumpDate.substring(0, 4) + ""
@@ -232,7 +234,7 @@ public class WikipediaEdition {
 				System.exit(-1);
 			}
 			try {
-				downloadFile(url, targetFile.getAbsolutePath(), sourceFile.size());
+				downloadFile(url, targetFile.getAbsolutePath(), sourceFile.size(), logger);
 			} catch (IOException e) {
 				logger.severe("Could not download the file at " + url.toString());
 				e.printStackTrace();
@@ -257,9 +259,10 @@ public class WikipediaEdition {
 	 * @param url The URL of the file to download.
 	 * @param targetFile The target file.
 	 * @param size The size of the file to download
+	 * @param logger The logger of Graphipedia.
 	 * @throws IOException when some I/O error occurs.
 	 */
-	private void downloadFile(URL url, String targetFile, double size) throws IOException {
+	private void downloadFile(URL url, String targetFile, double size, Logger logger) throws IOException {
 		HttpURLConnection httpConnection = (HttpURLConnection) (url.openConnection());
 		DownloadProgress progressBar = size != -1L ? new DownloadProgress(size) : null;
 		java.io.BufferedInputStream in = new java.io.BufferedInputStream(httpConnection.getInputStream());
@@ -271,11 +274,11 @@ public class WikipediaEdition {
 		while ((x = in.read(data, 0, 1024)) >= 0) {
 			downloadedFileSize += x;
 			if ( progressBar != null && (double)downloadedFileSize < size )
-				progressBar.visualize((double)downloadedFileSize);
+				progressBar.visualize((double)downloadedFileSize, logger);
 			bout.write(data, 0, x);
 		}
 		if (progressBar != null)
-			progressBar.visualize(size);
+			progressBar.visualize(size, logger);
 		in.close();
 		bout.close();
 	}

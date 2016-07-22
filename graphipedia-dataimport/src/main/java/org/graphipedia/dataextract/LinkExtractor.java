@@ -118,6 +118,7 @@ public class LinkExtractor extends SimpleStaxParser {
 		this.id = null;
 		this.attributeValues = new ArrayList<String>();
 		this.pageCounter = new ProgressCounter(logger);
+		logger.info("Extracting the Wikipedia pages...");
 		this.dp = dp;
 		this.ns = ns;
 	}

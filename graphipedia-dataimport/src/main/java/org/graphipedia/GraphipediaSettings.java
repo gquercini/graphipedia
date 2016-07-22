@@ -62,6 +62,11 @@ public class GraphipediaSettings {
 	 * The codes of the languages of the Wikipedia editions to import.
 	 */
 	private List<String> languages;
+	
+	/**
+	 * The root directory where all files used by Graphipedia are stored.
+	 */
+	private File rootDirectory;
 
 	/**
 	 * The directory of the Neo4j database were Wikipedia is to be imported.
@@ -76,13 +81,16 @@ public class GraphipediaSettings {
 
 	/**
 	 * Creates a new instance of Graphipedia settings.
+	 * @param rootDirectory The root directory where all the data used by Graphipedia are stored.
 	 * @param neo4jDir The directory where the Neo4j database is written.
 	 */
-	public GraphipediaSettings(File neo4jDir) {
+	public GraphipediaSettings(File rootDirectory, File neo4jDir) {
 		this.wikipediaEditions = new HashMap<String, File>();
 		this.languages = new ArrayList<String>();
 		this.neo4jDir = neo4jDir;
+		this.rootDirectory = rootDirectory;
 	}
+
 	
 	/**
 	 * Returns the languages of the Wikipedia editions to import to Neo4j.
@@ -102,6 +110,7 @@ public class GraphipediaSettings {
 	 */
 	public void addLanguage(String language) {
 		this.languages.add(language);
+		this.wikipediaEditions.put(language, new File(rootDirectory, language));
 	}
 	
 	/**
@@ -168,70 +177,8 @@ public class GraphipediaSettings {
 		scanner.setBasedir(wikipediaDirectory);
 		scanner.setCaseSensitive(false);
 		scanner.scan();
-		String[] files = scanner.getIncludedFiles(); // we are sure we have only one file here because we already called checkWikipediaEditionFiles
+		String[] files = scanner.getIncludedFiles(); 
 		return new File(wikipediaDirectory, files[0]);
 	}
 
-
-//	/**
-//	 * Performs some checks on the Neo4j directory.
-//	 */
-//	private void checkNeo4jDirectory() {
-//		if ( neo4jDir.exists() && !neo4jDir.isDirectory() ) {
-//			logger.severe(this.neo4jDir + " exists and is not a directory\n");
-//			System.exit(-1);
-//		}
-//		else
-//			if ( neo4jDir.exists() && neo4jDir.isDirectory() ) {
-//				logger.severe("The directory " + this.neo4jDir + " already exists.");
-//				System.exit(-1);
-//			}
-//			else
-//				if ( !neo4jDir.exists() &&  !neo4jDir.mkdir()) {
-//					logger.severe("Unable to create directory " + this.neo4jDir + " in the working directory. Check the permissions and retry.");
-//					System.exit(-1);
-//				}
-//	}
-//	
-//	/**
-//	 * Performs some checks on the directories that contain the Wikipedia editions to import.
-//	 */
-//	private void checkWikipediaEditionsDirectories() {
-//		for ( String lang : languages ) {
-//			File editionDir = new File(lang);
-//			if ( !editionDir.exists() || !editionDir.isDirectory() ) {
-//				logger.severe("directory " + editionDir + " does not exist or is not a directory");
-//				System.exit(-1);
-//			}
-//			checkWikipediaEditionFiles(editionDir);
-//			this.wikipediaEditions.put(lang, editionDir);
-//		}
-//	}
-//
-//	/**
-//	 * Checks the existence of the necessary input files in the given directory that contains 
-//	 * a specific Wikipedia edition.
-//	 * @param editionDir A directory containing a specific Wikipedia edition.
-//	 */
-//	private void checkWikipediaEditionFiles(File editionDir) {
-//		for ( String fileName : WIKIPEDIA_EDITIONS_INPUT_FILES ) {
-//			DirectoryScanner scanner = new DirectoryScanner();
-//			scanner.setIncludes(new String[]{"*"+fileName});
-//			scanner.setBasedir(editionDir);
-//			scanner.setCaseSensitive(false);
-//			scanner.scan();
-//			String[] files = scanner.getIncludedFiles();
-//			if ( files.length == 0 ) {
-//				logger.severe("No file *" + fileName + " found in directory " + editionDir.getAbsolutePath());
-//				System.exit(-1);
-//			}
-//			else
-//				if ( files.length > 1 ) {
-//					logger.severe("Multiple files *" + fileName + " found in directory " + editionDir.getAbsolutePath());
-//					System.exit(-1);
-//				}	
-//		}
-//
-//	}
-//	
 }

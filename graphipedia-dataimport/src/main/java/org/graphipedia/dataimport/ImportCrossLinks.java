@@ -68,11 +68,12 @@ public class ImportCrossLinks extends Thread {
 	 * @param settings The import settings.
 	 * @param inserter The connection to the Neo4j database.
 	 * @param language The language of the Wikipedia edition being currently imported.
+	 * @param loggerSuffix A suffix appended to the messages of the logger.
 	 */
-	public ImportCrossLinks(GraphipediaSettings settings, BatchInserter inserter, String language ) {
+	public ImportCrossLinks(GraphipediaSettings settings, BatchInserter inserter, String language, String loggerSuffix ) {
 		this.inserter = inserter;
 		this.crossLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractCrossLinks.OUTPUT_FILE_NAME);
-		this.logger = LoggerFactory.createLogger("Import crosslinks  (" + language.toUpperCase() + ")");
+		this.logger = LoggerFactory.createLogger("Import crosslinks  (" + loggerSuffix + ")");
 		this.linkCounter = new ProgressCounter(logger);
 	}
 
@@ -97,7 +98,7 @@ public class ImportCrossLinks extends Thread {
 			System.exit(-1);
 		}
 		long elapsed = System.currentTimeMillis() - startTime;
-		logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed) + "\n", linkCounter.getCount()));
+		logger.info(String.format("%d links imported in " + ReadableTime.readableTime(elapsed), linkCounter.getCount()));
 	}
 
 }

@@ -21,7 +21,9 @@
 //
 package org.graphipedia.wikipedia;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -34,7 +36,7 @@ import java.util.Map;
  * However, the name of a namespace may vary from language to language.
  *
  */
-public class Namespaces {
+public class Namespaces implements Iterable<Namespace> {
 	
 	/**
 	 * The list of namespaces indexed by their title.
@@ -101,6 +103,14 @@ public class Namespaces {
 		if ( namespace == null ) // An article in the main namespace that happens to have a colon in the title.
 			return getNamespaceFromId(Namespace.MAIN);
 		return namespace;
+	}
+
+	@Override
+	public Iterator<Namespace> iterator() {
+		ArrayList<Namespace> namespaces = new ArrayList<Namespace>(); 
+		for ( Map.Entry<String, Namespace> ns : this.namespacesByTitle.entrySet() )
+			namespaces.add(ns.getValue());
+		return namespaces.iterator();
 	}
 
 }
