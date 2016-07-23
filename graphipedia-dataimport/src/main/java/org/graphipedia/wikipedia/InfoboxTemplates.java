@@ -134,7 +134,7 @@ public class InfoboxTemplates  {
 			String currentCategory = categories.get(i);
 			String[] cats = null;
 			do {
-				wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
+				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
 			} while( cats == null );
 			try {
 				Thread.sleep(2000);
@@ -148,7 +148,7 @@ public class InfoboxTemplates  {
 				}
 			String[] templates = null;
 			do {
-				wiki.getCategoryMembers(currentCategory, Namespace.TEMPLATE);
+				templates = wiki.getCategoryMembers(currentCategory, Namespace.TEMPLATE);
 			} while( templates == null ); 
 			try {
 				Thread.sleep(2000);

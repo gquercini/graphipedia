@@ -186,13 +186,13 @@ public class WikipediaEdition {
 				+ "-" + dumpDate.substring(4, 6) + "-" + dumpDate.substring(6));
 		
 		File xmlWikipediaFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_XML_FILE);
-		downloadFile(checkpoint, logger, dump.xmlDumpFile(), xmlWikipediaFile, "Downloading the Wikipedia XML file...");
+		downloadFile(checkpoint, logger, dump.xmlDumpFile(), xmlWikipediaFile, "Downloading the Wikipedia XML file (" + languageCode() + ")...");
 		
 		File crossLinksFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_CROSSLINKS_FILE);
-		downloadFile(checkpoint, logger, dump.crosslinkDumpFile(), crossLinksFile, "Downloading the cross-language links file...");
+		downloadFile(checkpoint, logger, dump.crosslinkDumpFile(), crossLinksFile, "Downloading the cross-language links file (" + languageCode() + ")...");
 		
 		File geotagsFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_GEOTAGS_FILE);
-		downloadFile(checkpoint, logger, dump.geotagsDumpFile(), geotagsFile, "Downloading the geotags file...");
+		downloadFile(checkpoint, logger, dump.geotagsDumpFile(), geotagsFile, "Downloading the geotags file (" + languageCode() + ")...");
 		
 		try {
 			checkpoint.addDownloadedEdition(languageCode(), true);
@@ -234,7 +234,7 @@ public class WikipediaEdition {
 				System.exit(-1);
 			}
 			try {
-				downloadFile(url, targetFile.getAbsolutePath(), sourceFile.size(), logger);
+				downloadFile(url, targetFile.getAbsolutePath(), sourceFile.size(), logger, message);
 			} catch (IOException e) {
 				logger.severe("Could not download the file at " + url.toString());
 				e.printStackTrace();
@@ -260,9 +260,10 @@ public class WikipediaEdition {
 	 * @param targetFile The target file.
 	 * @param size The size of the file to download
 	 * @param logger The logger of Graphipedia.
+	 * @param message A message displayed while downloading the file.
 	 * @throws IOException when some I/O error occurs.
 	 */
-	private void downloadFile(URL url, String targetFile, double size, Logger logger) throws IOException {
+	private void downloadFile(URL url, String targetFile, double size, Logger logger, String message) throws IOException {
 		HttpURLConnection httpConnection = (HttpURLConnection) (url.openConnection());
 		DownloadProgress progressBar = size != -1L ? new DownloadProgress(size) : null;
 		java.io.BufferedInputStream in = new java.io.BufferedInputStream(httpConnection.getInputStream());
@@ -274,11 +275,11 @@ public class WikipediaEdition {
 		while ((x = in.read(data, 0, 1024)) >= 0) {
 			downloadedFileSize += x;
 			if ( progressBar != null && (double)downloadedFileSize < size )
-				progressBar.visualize((double)downloadedFileSize, logger);
+				progressBar.visualize((double)downloadedFileSize, logger, message);
 			bout.write(data, 0, x);
 		}
 		if (progressBar != null)
-			progressBar.visualize(size, logger);
+			progressBar.visualize(size, logger, message);
 		in.close();
 		bout.close();
 	}

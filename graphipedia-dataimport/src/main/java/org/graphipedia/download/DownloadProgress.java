@@ -52,13 +52,14 @@ public class DownloadProgress {
 	/**
 	 * Visualizes the progress with the given logger.
 	 * @param currentValue The current progress (percent).
+	 * @param message A message displayed along with the progress.
 	 * @param logger The logger used to visualize the progress.
 	 */
-	public void visualize(double currentValue, Logger logger) {
+	public void visualize(double currentValue, Logger logger, String message) {
 		double currentProgress = Math.floor(currentValue / maxValue * 100.);
 		if (currentProgress > progress) {
 			progress = currentProgress;
-			logger.info(progress + "% Complete");
+			logger.info(message + " " + progress + "% Complete");
 		}
 	}
 	
