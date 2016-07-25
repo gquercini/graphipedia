@@ -105,7 +105,10 @@ public class ExtractNamespaces extends Thread {
 			String line;
 			while( (line = bd.readLine()) != null ) {
 				String[] values = line.split("\t");
-				namespaces.add(new Namespace(Integer.parseInt(values[0]), values[1]));
+				if ( values.length == 1 )
+					namespaces.add(new Namespace(Integer.parseInt(values[0]), ""));
+				else
+					namespaces.add(new Namespace(Integer.parseInt(values[0]), values[1]));
 			}
 			bd.close();
 			}
