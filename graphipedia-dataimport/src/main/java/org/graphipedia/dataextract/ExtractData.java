@@ -121,6 +121,7 @@ public class ExtractData extends Thread {
 		this.itRootCategory = itRootCategory;
 		this.checkpoint = checkpoint;
 		this.geotags = new HashMap<String, Geotags>();
+		
 	}
 	
 	/**
