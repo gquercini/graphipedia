@@ -22,8 +22,10 @@
 package org.graphipedia.dataextract;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.logging.Logger;
 
@@ -118,6 +120,10 @@ public class ExtractNamespaces extends Thread {
 			try {
 				extractor.parse(settings.getWikipediaXmlFile(language).getAbsolutePath());
 				this.namespaces = extractor.namespaces();
+				BufferedWriter bw = new BufferedWriter(new FileWriter(this.namespaceFile));
+				for ( Namespace namespace : this.namespaces ) 
+					bw.write(namespace.id() + "\t" + namespace.title() + "\n");
+				bw.close();
 			} catch (Exception e) {
 				logger.severe("Error while parsing the XML file");
 				e.printStackTrace();
