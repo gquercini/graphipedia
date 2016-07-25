@@ -274,10 +274,11 @@ public class Graphipedia {
 			namespaces.put(languageCode, extractData.getNamespaces());
 			if ( graphImporter != null )
 				graphImporter.join(); // wait for the previous import to finish, if it's still running.
-			graphImporter = new ImportGraph(inserter, settings, languageCode, extractData.geotags(), suffix);
+			graphImporter = new ImportGraph(inserter, settings, languageCode, extractData.geotags(), 
+					suffix, editionStartTime);
 			graphImporter.start();
-			long editionElapsed = System.currentTimeMillis() - editionStartTime;
-			logger.info("Import completed for the Wikipedia in " + language + " (" + languageLocal + ", " + languageCode.toUpperCase() + ") in " + ReadableTime.readableTime(editionElapsed) );
+			
+			
 		}
 		if (graphImporter != null)
 			graphImporter.join();

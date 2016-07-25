@@ -71,6 +71,11 @@ public class ImportGraph extends Thread {
      * The geotags associated to pages that describe spatial entities.
      */
     private final Map<String, Geotags> geotags;
+    
+    /**
+     * The time (in ms) when the import starts.
+     */
+    private long startTime;
 
     /**
      * Creates a new thread.
@@ -80,15 +85,17 @@ public class ImportGraph extends Thread {
      * @param language The code of the language of the Wikipedia edition being imported.
      * @param geotags The geotags associated to Wikipedia pages that describe spatial entities.
      * @param loggerMessageSuffix A suffix to append to the message displayed by the logger.
+     * @param startTime The time when the import starts (in ms).
      */
     public ImportGraph(BatchInserter inserter, GraphipediaSettings settings, String language, 
-    		Map<String, Geotags> geotags, String loggerMessageSuffix) {
+    		Map<String, Geotags> geotags, String loggerMessageSuffix, long startTime) {
     	this.language = language;
     	this.inserter = inserter;
         this.inMemoryIndex = new HashMap<String, Page>();
         this.logger = LoggerFactory.createLogger("Graph import (" + loggerMessageSuffix + ")");
         this.temporaryLinkFile = new File(settings.wikipediaEditionDirectory(language), ExtractData.TEMPORARY_LINK_FILE);
         this.geotags = geotags;
+        this.startTime = startTime;
     }
 
     @Override
@@ -108,7 +115,8 @@ public class ImportGraph extends Thread {
 			System.exit(-1);
 		}
         setAttributeNodes();
-      
+        long editionElapsed = System.currentTimeMillis() - startTime;
+		logger.info("Import completed for the Wikipedia in " + language + " (" + language.toUpperCase() + ") in " + ReadableTime.readableTime(editionElapsed) );
     }
 
     /**
