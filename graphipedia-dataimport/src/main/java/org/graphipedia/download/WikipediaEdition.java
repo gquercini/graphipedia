@@ -241,7 +241,7 @@ public class WikipediaEdition {
 				System.exit(-1);
 			}
 			try {
-				checkpoint.addDownloadedFile(targetFile.getName(), true);
+				checkpoint.addDownloadedFile(targetFile.getAbsolutePath(), true);
 			} catch (IOException e) {
 				logger.severe("Error while saving the checkpoint to file");
 				e.printStackTrace();

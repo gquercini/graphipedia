@@ -136,11 +136,7 @@ public class InfoboxTemplates  {
 			do {
 				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
 			} while( cats == null );
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+		
 			for (String cat : cats) 
 				if ( !visitedCategories.contains(cat) ) {
 					visitedCategories.add(cat);
@@ -150,11 +146,7 @@ public class InfoboxTemplates  {
 			do {
 				templates = wiki.getCategoryMembers(currentCategory, Namespace.TEMPLATE);
 			} while( templates == null ); 
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			
 			for ( String template : templates ) {
 				int colonIndex = template.indexOf(":");
 				String templateName = template.substring(colonIndex + 1);

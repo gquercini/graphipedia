@@ -25,6 +25,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -119,6 +120,7 @@ public class ExtractData extends Thread {
 		this.dpRootCategory = dpRootCategory;
 		this.itRootCategory = itRootCategory;
 		this.checkpoint = checkpoint;
+		this.geotags = new HashMap<String, Geotags>();
 	}
 	
 	/**

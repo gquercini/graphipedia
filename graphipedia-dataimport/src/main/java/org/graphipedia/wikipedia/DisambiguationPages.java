@@ -116,11 +116,7 @@ public class DisambiguationPages {
 			do {
 				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
 			} while (cats == null);
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			
 			for (String cat : cats) 
 				if ( !visitedCategories.contains(cat) ) {
 					visitedCategories.add(cat);
@@ -131,11 +127,7 @@ public class DisambiguationPages {
 				disambiguationPages = wiki.getCategoryMembers(currentCategory, Namespace.MAIN);
 			}
 			while( disambiguationPages == null );
-			try {
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			
 			for ( String page : disambiguationPages ) { 
 					this.disambiguationPages.add(page);
 					pleaseWait.addDetails("disambiguation pages extracted so far " + this.disambiguationPages.size());
