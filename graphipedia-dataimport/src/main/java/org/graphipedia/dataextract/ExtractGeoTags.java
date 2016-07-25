@@ -151,7 +151,7 @@ public class ExtractGeoTags extends Thread {
 	 * @return The geotags obtained by this thread.
 	 */
 	public Map<String, Geotags> getGeoTags() {
-		return geoTags.size() > 0 ? this.geoTags : null;
+		return this.geoTags;
 	}
 
 }
