@@ -60,7 +60,12 @@ public enum CheckPointFlag {
 	 * Indicates that the cross-links have been extracted from the dump file 
 	 * of a Wikipedia edition.
 	 */
-	crosslinksExtracted
+	crosslinksExtracted,
+	
+	/**
+	 * Indicates that the namespaces have been extracted.
+	 */
+	namespacesExtracted
 	
 	
 }

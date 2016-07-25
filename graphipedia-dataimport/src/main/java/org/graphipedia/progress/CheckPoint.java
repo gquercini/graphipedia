@@ -71,6 +71,12 @@ public class CheckPoint {
 	private Set<String> disambigExtracted;
 	
 	/**
+	 * The codes of the languages of the editions for which the namespaces have already been extracted
+	 * from Wikipedia.
+	 */
+	private Set<String> namespacesExtracted;
+	
+	/**
 	 * The codes of the languages of the editions for which the infobox templates have been already 
 	 * extracted from Wikipedia.
 	 */
@@ -98,6 +104,7 @@ public class CheckPoint {
 		this.infoboxExtracted = new HashSet<String>();
 		this.linksExtracted = new HashSet<String>();
 		this.crossLinksExtracted = new HashSet<String>();
+		this.namespacesExtracted = new HashSet<String>();
 	}
 	
 	/**
@@ -138,7 +145,6 @@ public class CheckPoint {
 	/**
 	 * Adds a Wikipedia edition to the list of editions for which the disambiguation pages have already been 
 	 * extracted.
-	 * The checkpoint is saved to file.
 	 * 
 	 * @param edition The code of the language of the edition for which the disambiguation pages have already been 
 	 * extracted. 
@@ -149,6 +155,20 @@ public class CheckPoint {
 		this.disambigExtracted.add(edition);
 		if (save)
 			save(CheckPointFlag.disambigExtracted, edition);
+	}
+	
+	/**
+	 * Adds a Wikipedia edition to the list of editions for which the namespaces have already been extracted.
+	 * 
+	 * @param edition The code of the language of the edition for which the namespaces habe already been extracted.
+	 * @param save Set {@code true} if the checkpoint is to be saved to file.
+	 * @throws IOException IOException when a I/O error occurs while writing the checkpoint file.
+	 */
+	public void addNamespacesExtracted(String edition, boolean save) throws IOException {
+		this.namespacesExtracted.add(edition);
+		if (save)
+			save(CheckPointFlag.namespacesExtracted, edition);
+		
 	}
 	
 	/**
@@ -229,6 +249,16 @@ public class CheckPoint {
 	}
 	
 	/**
+	 * Returns whether the namespaces have already been obtained from the specified Wikipedia edition. 
+	 * @param edition The code of the language of a Wikipedia edition.
+	 * @return {@code true} if the namespaces have already been obtained from the specified Wikipedia edition,
+	 * {@code false} otherwise.
+	 */
+	public boolean isNamespacesExtracted(String edition) {
+		return this.namespacesExtracted.contains(edition);
+	}
+	
+	/**
 	 * Returns whether the infobox templates have already been obtained from Wikipedia for a 
 	 * specific edition.
 	 * @param edition The code of the language of a Wikipedia edition.
@@ -294,6 +324,8 @@ public class CheckPoint {
 			case crosslinksExtracted:
 				addCrossLinksExtracted(object, false);
 				break;
+			case namespacesExtracted:
+				addNamespacesExtracted(object, false);
 			default:
 				break;
 			}	

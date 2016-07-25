@@ -150,7 +150,8 @@ public class ExtractData extends Thread {
 		DisambiguationPageExtractor dpExtractor = 
 				new DisambiguationPageExtractor(settings, this.language, dpRootCategory, checkpoint, loggerMessageSuffix);
 		dpExtractor.start();
-		ExtractNamespaces nsExtractor = new ExtractNamespaces(settings, language, loggerMessageSuffix);
+		ExtractNamespaces nsExtractor = new ExtractNamespaces(settings, language, 
+				loggerMessageSuffix, new File(settings.wikipediaEditionDirectory(language), ExtractNamespaces.NAMESPACE_FILE), checkpoint);
 		nsExtractor.start();
 		InfoboxTemplatesExtractor itExtractor = 
 				new InfoboxTemplatesExtractor(settings, language, itRootCategory, checkpoint, loggerMessageSuffix);

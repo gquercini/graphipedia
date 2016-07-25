@@ -21,10 +21,16 @@
 //
 package org.graphipedia.dataextract;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.logging.Logger;
 
 import org.graphipedia.GraphipediaSettings;
+import org.graphipedia.progress.CheckPoint;
 import org.graphipedia.progress.LoggerFactory;
+import org.graphipedia.wikipedia.Namespace;
 import org.graphipedia.wikipedia.Namespaces;
 
 /**
@@ -32,7 +38,22 @@ import org.graphipedia.wikipedia.Namespaces;
  *
  */
 public class ExtractNamespaces extends Thread {
-	
+
+	/**
+	 * Name of the file where the namespaces are saved after being extracted from the Wikipedia XML file.
+	 */
+	public static final String NAMESPACE_FILE = "namespaces.csv";
+
+	/**
+	 * The file where the namespaces are stored, if already extracted in a previous computation.
+	 */
+	private File namespaceFile;
+
+	/**
+	 * The checkpoint of Graphipedia.
+	 */
+	private CheckPoint checkPoint;
+
 	/**
 	 * The namespaces in a Wikipedia language edition.
 	 */
@@ -58,29 +79,61 @@ public class ExtractNamespaces extends Thread {
 	 * @param settings The general settings of Graphipedia.
 	 * @param language The code of the language of the Wikipedia edition being imported. 
 	 * @param loggerMessageSuffix A suffix apppended to all the messages of the logger.
+	 * @param namespaceFile The file that contains the namespaces, if already extracted in a previous computation
+	 * @param checkPoint The checkpoint of Graphipedia.
 	 */
-	public ExtractNamespaces(GraphipediaSettings settings, String language, String loggerMessageSuffix) {
+	public ExtractNamespaces(GraphipediaSettings settings, String language, String loggerMessageSuffix, 
+			File namespaceFile, CheckPoint checkPoint) {
+		this.namespaceFile = namespaceFile; 
+		this.checkPoint = checkPoint;
 		this.namespaces = new Namespaces();
 		this.settings = settings;
 		this.language = language;
 		this.logger = LoggerFactory.createLogger("Namespace Extractor (" + loggerMessageSuffix + ")");
 	}
-	
+
 	@Override
-	public void run() {
+	public void run() {		
 		logger.info("Extract namespaces....");
-		NamespaceExtractor extractor = new NamespaceExtractor();
-		try {
-			extractor.parse(settings.getWikipediaXmlFile(language).getAbsolutePath());
-			this.namespaces = extractor.namespaces();
-		} catch (Exception e) {
-			logger.severe("Error while parsing the XML file");
-			e.printStackTrace();
-			System.exit(-1);
-		} 
+		// Loading the namespaces from a previous computation.
+		if ( this.checkPoint.isNamespacesExtracted(language) ) {
+			try {
+			this.namespaces = new Namespaces();
+			BufferedReader bd = new BufferedReader(new FileReader(namespaceFile));
+			String line;
+			while( (line = bd.readLine()) != null ) {
+				String[] values = line.split("\t");
+				namespaces.add(new Namespace(Integer.parseInt(values[0]), values[1]));
+			}
+			bd.close();
+			}
+			catch (IOException e) {
+				logger.severe("Error while retrieving the namespaces");
+				e.printStackTrace();
+				System.exit(-1);
+			}
+		}
+		else {
+			NamespaceExtractor extractor = new NamespaceExtractor();
+			try {
+				extractor.parse(settings.getWikipediaXmlFile(language).getAbsolutePath());
+				this.namespaces = extractor.namespaces();
+			} catch (Exception e) {
+				logger.severe("Error while parsing the XML file");
+				e.printStackTrace();
+				System.exit(-1);
+			}
+			try {
+				this.checkPoint.addNamespacesExtracted(language, true);
+			} catch (IOException e) {
+				logger.info("Error while saving the checkpoint file");
+				e.printStackTrace();
+				System.exit(-1);
+			}
+		}
 		logger.info("Done!");
 	}
-	
+
 	/**
 	 * Returns the namespaces extracted.
 	 * @return The namespaces extracted.

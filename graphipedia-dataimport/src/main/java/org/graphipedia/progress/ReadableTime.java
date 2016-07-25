@@ -72,7 +72,7 @@ public class ReadableTime {
 		for ( int i = 0; i < time.length; i += 1 ) {
 			if ( time[i] == 0 )
 				continue;
-			rt += rt.length() == 0 ? "" + time[i] + unit[i] : ", " + time[i] + unit[i]; 
+			rt += rt.length() == 0 ? "0 ms" + time[i] + unit[i] : ", " + time[i] + unit[i]; 
 		}
 		return rt;
 	}
