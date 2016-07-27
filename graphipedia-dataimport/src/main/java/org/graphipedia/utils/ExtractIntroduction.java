@@ -222,6 +222,7 @@ class XmlFileParser extends SimpleStaxParser {
 		Introduction intro = introParser.parse(text);
 		if ( intro != null ) {
 			String introText = intro.text();
+			
 			try {
 				introText = cleaner.cleanText(title, Integer.parseInt(id), introText);
 			} catch (Exception e) {

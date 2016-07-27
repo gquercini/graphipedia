@@ -24,6 +24,7 @@ package org.graphipedia.wikipedia.parser;
 import org.graphipedia.wikipedia.Namespaces;
 import org.sweble.wikitext.engine.CompiledPage;
 import org.sweble.wikitext.engine.Compiler;
+import org.sweble.wikitext.engine.CompilerException;
 import org.sweble.wikitext.engine.PageId;
 import org.sweble.wikitext.engine.PageTitle;
 import org.sweble.wikitext.engine.utils.SimpleWikiConfiguration;
@@ -90,9 +91,16 @@ public class WikiTextCleaner {
 	 * @throws Exception When something goes wrong while parsing the wiki text of the article.
 	 */
 	public String cleanText(String title, int id, String text) throws Exception {
+		System.out.println("cleaning " + title);
 		PageTitle pageTitle = PageTitle.make(config, title);
 		PageId pageId = new PageId(pageTitle, id);
-		CompiledPage cp = compiler.postprocess(pageId, text, null);
+		CompiledPage cp = null;
+		try {
+			cp = compiler.postprocess(pageId, text, null);
+		} catch (CompilerException e) {
+			System.out.println(title + " impossible to parse");
+			return "";
+		}
 		String cleanText = (String)textConverter.go(cp.getPage());
 		return cleanText;
 	}
