@@ -38,8 +38,8 @@ import org.graphipedia.progress.ReadableTime;
  *
  */
 public class WikipediaEdition {
-	
-	
+
+
 	/**
 	 * The base URL of the web page that contains the dump files of a Wikipedia language edition.
 	 */
@@ -150,7 +150,7 @@ public class WikipediaEdition {
 	public String geotagFileUrl(String date) {
 		return dumpUrl(date) + this.languageCode + "wiki-" + date + "-" + GraphipediaSettings.WIKIPEDIA_GEOTAGS_FILE;
 	}
-	
+
 	/**
 	 * Downloads the last complete dump of this Wikipedia language edition.
 	 * @param checkpoint The checkpoint information. 
@@ -184,16 +184,16 @@ public class WikipediaEdition {
 		String dumpDate = dump.date();
 		logger.info("Date of last complete dump " + dumpDate.substring(0, 4) + ""
 				+ "-" + dumpDate.substring(4, 6) + "-" + dumpDate.substring(6));
-		
+
 		File xmlWikipediaFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_XML_FILE);
 		downloadFile(checkpoint, logger, dump.xmlDumpFile(), xmlWikipediaFile, "Downloading the Wikipedia XML file (" + languageCode() + ")...");
-		
+
 		File crossLinksFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_CROSSLINKS_FILE);
 		downloadFile(checkpoint, logger, dump.crosslinkDumpFile(), crossLinksFile, "Downloading the cross-language links file (" + languageCode() + ")...");
-		
+
 		File geotagsFile = new File(targetDirectory, GraphipediaSettings.WIKIPEDIA_GEOTAGS_FILE);
 		downloadFile(checkpoint, logger, dump.geotagsDumpFile(), geotagsFile, "Downloading the geotags file (" + languageCode() + ")...");
-		
+
 		try {
 			checkpoint.addDownloadedEdition(languageCode(), true);
 		} catch (IOException e) {
@@ -202,9 +202,9 @@ public class WikipediaEdition {
 			return false;
 		}
 		return true;
-		
+
 	}
-	
+
 	/**
 	 * Downloads a dump file.
 	 * @param checkpoint The checkpoint information.
@@ -241,6 +241,13 @@ public class WikipediaEdition {
 				System.exit(-1);
 			}
 			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e1) {
+				e1.printStackTrace();
+				System.exit(-1);
+			}
+			try {
+
 				checkpoint.addDownloadedFile(targetFile.getAbsolutePath(), true);
 			} catch (IOException e) {
 				logger.severe("Error while saving the checkpoint to file");
@@ -252,8 +259,8 @@ public class WikipediaEdition {
 		else
 			logger.info("Already downloaded");
 	}
-	
-	
+
+
 	/**
 	 * Download the file at the given URL to the target file.
 	 * @param url The URL of the file to download.
@@ -272,12 +279,31 @@ public class WikipediaEdition {
 		byte[] data = new byte[1024];
 		long downloadedFileSize = 0;
 		int x = 0;
-		while ((x = in.read(data, 0, 1024)) >= 0) {
-			downloadedFileSize += x;
-			if ( progressBar != null && (double)downloadedFileSize < size )
-				progressBar.visualize((double)downloadedFileSize, logger, message);
-			bout.write(data, 0, x);
+		int eof = 0;
+
+		do {
+			while ((x = in.read(data, 0, 1024)) >= 0) {
+				eof = 0;
+				downloadedFileSize += x;
+				if ( progressBar != null && (double)downloadedFileSize < size )
+					progressBar.visualize((double)downloadedFileSize, logger, message);
+				bout.write(data, 0, x);
+			}
+			// It is possible that for some reason the method "read" invoked on the input stream
+			// returns -1 (EOF), though the file has not been completely downloaded.
+			// For this reason, we give another chance, we wait 10 seconds and retry reading again the stream
+			// When the real EOF is reached (meaning that the file has been completely downloaded) 
+			// then the value of the variable eof becomes greater than 1 and the loop is broken.
+			eof += 1;
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+				System.exit(-1);
+			}
 		}
+		while(eof <= 1);
+
 		if (progressBar != null)
 			progressBar.visualize(size, logger, message);
 		in.close();
