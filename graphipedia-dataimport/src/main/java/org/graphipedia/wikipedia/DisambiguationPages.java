@@ -114,7 +114,8 @@ public class DisambiguationPages {
 			String currentCategory = categories.get(i);
 			String[] cats = null;
 			do {
-				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
+                int[] ns = {Namespace.CATEGORY};
+				cats = wiki.getCategoryMembers(currentCategory, ns);
 			} while (cats == null);
 			
 			for (String cat : cats) 
@@ -124,7 +125,8 @@ public class DisambiguationPages {
 				}
 			String[] disambiguationPages = null;
 			do {
-				disambiguationPages = wiki.getCategoryMembers(currentCategory, Namespace.MAIN);
+                int[] ns = {Namespace.MAIN};
+				disambiguationPages = wiki.getCategoryMembers(currentCategory, ns);
 			}
 			while( disambiguationPages == null );
 			
