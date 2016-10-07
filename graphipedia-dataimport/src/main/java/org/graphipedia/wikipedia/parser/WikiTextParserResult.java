@@ -19,71 +19,61 @@
 // ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 // OTHER DEALINGS IN THE SOFTWARE.
 //
-package org.graphipedia.dataextract;
+package org.graphipedia.wikipedia.parser;
 
-import java.util.TimerTask;
-import java.util.logging.Logger;
+import java.util.Set;
 
-
+import org.graphipedia.wikipedia.Link;
 
 /**
- * This class is used when Graphipedia is downloading the disambiguation pages
- * and the infobox templates from Wikipedia, using the MediaWiki API, which might take a while.
+ * The result of the {@code WikitextParser}.
  *
  */
-public class PleaseWait extends TimerTask {
-
+public class WikiTextParserResult {
+	
 	/**
-	 * Whether this task has to stop.
+	 * The set of links in the page parsed.
 	 */
-	private boolean stop;
-
+	private Set<Link> links;
+	
 	/**
-	 * The logger of Graphipedia
+	 * The name of the infobox, if any, of the page parsed.
 	 */
-	private Logger logger;
-
+	private String infoboxName;
+	
 	/**
-	 * Details about the progress of the task that takes a while.
+	 * Creates a new result.
+	 * @param links The set of links in the page parsed.
 	 */
-	private String details;
-
-	/**
-	 * Constructor.
-	 * @param logger The logger of Graphipedia.
-	 */
-	public PleaseWait(Logger logger) {
-		this.logger = logger;
-		this.details = "";
-		this.stop = false;
+	public WikiTextParserResult(Set<Link> links) {
+		this(links, null);
 	}
-
-	@Override
-	public void run() {
-		if (stop)
-			this.cancel();
-		else {
-			if ( details.length() == 0 )
-				logger.info("Still working");
-			else
-				logger.info("Still working, " + details);
-		}
-
-	}
-
+	
 	/**
-	 * Adds some details to the progress of the task.
-	 * @param details The details to display.
+	 * Creates a new result.
+	 * @param links The set of links in the page parsed.
+	 * @param infoboxName The name of the infobox in the page parsed.
 	 */
-	public void addDetails(String details) {
-		this.details = details;
+	public WikiTextParserResult(Set<Link> links, String infoboxName) {
+		this.links = links;
+		this.infoboxName = infoboxName;
 	}
-
+	
 	/**
-	 * Stops this task.
+	 * Returns the set of links in  the page parsed.
+	 * @return The set of links in  the page parsed.
 	 */
-	public void stop() {
-		this.stop = true;
+	public Set<Link> links() {
+		return this.links;
 	}
+	
+	/**
+	 * Returns the name of the infobox, if any, in the page parsed
+	 * @return The name of the infobox, if any, in the page parsed, {@code null} otherwise.
+	 */
+	public String infoboxName() {
+		return this.infoboxName;
+	}
+	
 
 }

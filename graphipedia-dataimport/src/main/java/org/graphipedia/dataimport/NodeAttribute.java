@@ -85,7 +85,12 @@ public enum NodeAttribute {
 	/**
 	 * The type of a spatial entity, if the article is about a spatial entity.
 	 */
-	type
+	type,
+	
+	/**
+	 * The name of the infobox, if any, associated to an article. 
+	 */
+	infobox
 	
 
 }

@@ -79,7 +79,7 @@ public class InfoboxParser {
 				String templateName = template.substring(2, barIndex).trim();
 				if ( !it.isInfoboxTemplate(templateName) ) 
 					continue;
-				return new Infobox(template, startPos, endPos + 1);
+				return new Infobox(templateName, template, startPos, endPos + 1);
 			}
 		}
 		return null;

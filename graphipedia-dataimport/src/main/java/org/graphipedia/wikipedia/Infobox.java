@@ -28,6 +28,11 @@ package org.graphipedia.wikipedia;
 public class Infobox {
 	
 	/**
+	 * Name of the infobox.
+	 */
+	private String infoboxName;
+	
+	/**
 	 * The text of the infobox.
 	 */
 	private String text;
@@ -45,14 +50,24 @@ public class Infobox {
 	/**
 	 * Creates a new {@code Infobox}.
 	 * 
+	 * @param infoboxName The name of the infobox.
 	 * @param text The text of the infobox.
 	 * @param startIndex The offset of the first character of the infobox.
 	 * @param endIndex The offset of the last character of the infobox.
 	 */
-	public Infobox(String text, int startIndex, int endIndex) {
+	public Infobox(String infoboxName, String text, int startIndex, int endIndex) {
+		this.infoboxName = infoboxName;
 		this.text = text;
 		this.startIndex = startIndex;
 		this.endIndex = endIndex;
+	}
+	
+	/**
+	 * Returns the name of this infobox.
+	 * @return The name of this infobox.
+	 */
+	public String infoboxName() {
+		return this.infoboxName;
 	}
 	
 	/**

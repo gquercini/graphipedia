@@ -136,6 +136,7 @@ public class DisambiguationPages {
 
 		}
 		timer.cancel();
+		pleaseWait.stop();
 		bw.close();
 	}
 	

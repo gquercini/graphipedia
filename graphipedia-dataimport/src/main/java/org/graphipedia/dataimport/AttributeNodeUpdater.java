@@ -93,6 +93,9 @@ public class AttributeNodeUpdater {
 					if ( type != null )
 						attributes.put(NodeAttribute.type.name(), type);
 				}
+				String infoboxName = article.infoboxName();
+				if (infoboxName != null) 
+					attributes.put(NodeAttribute.infobox.name(), infoboxName);
 			}
 			else if ( page.isCategory() ) {
 				Category category = (Category)page;

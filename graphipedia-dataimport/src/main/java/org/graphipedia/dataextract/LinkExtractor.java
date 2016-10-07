@@ -40,6 +40,7 @@ import org.graphipedia.wikipedia.Namespaces;
 import org.graphipedia.wikipedia.parser.IntermediateXmlFileTags;
 import org.graphipedia.wikipedia.parser.SimpleStaxParser;
 import org.graphipedia.wikipedia.parser.WikiTextParser;
+import org.graphipedia.wikipedia.parser.WikiTextParserResult;
 import org.graphipedia.wikipedia.parser.XmlFileTags;
 
 /**
@@ -234,7 +235,15 @@ public class LinkExtractor extends SimpleStaxParser {
 		writer.writeCharacters(Integer.toString(ns.wikipediaPageNamespace(title).id()));
 		writer.writeEndElement();
 
-		Set<Link> links = wikiTextParser.parse(title, text);
+		WikiTextParserResult result = wikiTextParser.parse(title, text);
+		Set<Link> links = result.links();
+		String infoboxName = result.infoboxName();
+		if (infoboxName != null) {
+			writer.writeStartElement(IntermediateXmlFileTags.infoboxName.toString());
+			writer.writeCharacters(infoboxName);
+			writer.writeEndElement();
+		}
+
 		for (Link link : links )  {
 			if ( link.isRegularLink() )
 				writer.writeStartElement(IntermediateXmlFileTags.regularlink.toString()); // begin link

@@ -61,6 +61,11 @@ public enum IntermediateXmlFileTags {
 	disambig("dis"),
 	
 	/**
+	 * Tag to indicate the infobox name of a page, if any.
+	 */
+	infoboxName("inf"),
+	
+	/**
 	 * The namespace of a page (its identifier).
 	 */
 	namespace("nms"),

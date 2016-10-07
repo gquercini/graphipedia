@@ -43,17 +43,24 @@ public class Article extends Page {
 	private Geotags geotags;
 	
 	/**
+	 * The name of the infobox, if any, of this article.
+	 */
+	private String infoboxName;
+	
+	/**
 	 * Creates a new article.
 	 * @param title The title of the new article.
 	 * @param lang The code of the language of the Wikipedia edition of the new article.
 	 * @param wikiid The identifier of the new article in its Wikipedia edition. 
 	 * @param neo4jId The identifier of the node in the Neo4j database that corresponds to the article.
 	 * @param redirect Whether the article is a redirect.
+	 * @param infoboxName The name of the infobox, if any, of this article
 	 */
-	public Article(String title, String lang, String wikiid, long neo4jId, boolean redirect) {
+	public Article(String title, String lang, String wikiid, long neo4jId, boolean redirect, String infoboxName) {
 		super(title, lang, wikiid, neo4jId, redirect);
 		this.outdegree = this.indegree = 0;
 		this.geotags = null;
+		this.infoboxName = infoboxName;
 	}
 	
 	/**
@@ -64,9 +71,11 @@ public class Article extends Page {
 	 * @param neo4jId The identifier of the node in the Neo4j database that corresponds to the article.
 	 * @param redirect Whether the article is a redirect.
 	 * @param geotags The geotags associated with this article.
+	 * @param infoboxName The name of the infobox, if any, of this article
 	 */
-	public Article(String title, String lang, String wikiid, long neo4jId, boolean redirect, Geotags geotags) {
-		this(title, lang, wikiid, neo4jId, redirect);
+	public Article(String title, String lang, String wikiid, long neo4jId, boolean redirect, 
+			Geotags geotags, String infoboxName) {
+		this(title, lang, wikiid, neo4jId, redirect, infoboxName);
 		this.geotags = geotags;
 	}
 	
@@ -103,11 +112,20 @@ public class Article extends Page {
 	}
 	
 	/**
+	 * Returns the name of the infobox, if any, of this article.
+	 * @return The name of the infobox, if any, of this article., {@code null} otherwise.
+	 */
+	public String infoboxName() {
+		return this.infoboxName;
+	}
+	
+	/**
 	 * Increments the number of articles that link to this article.
 	 */
 	public void incrementIndegree() {
 		this.indegree += 1;
 	}
+	
 	
 	@Override
 	public boolean isArticle() {

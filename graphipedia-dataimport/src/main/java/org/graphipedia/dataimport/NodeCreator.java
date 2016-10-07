@@ -87,6 +87,11 @@ public class NodeCreator extends SimpleStaxParser {
 	 * The namespace of the Wikipedia page being currently imported.
 	 */
 	private int namespace;
+	
+	/**
+	 * The name of the infobox, if any, of the Wikipedia page being imported.
+	 */
+	private String infoboxName;
 
 	/**
 	 * Counts the number of Wikipedia pages imported to the Neo4j database.
@@ -116,6 +121,7 @@ public class NodeCreator extends SimpleStaxParser {
 		this.wikiId = null;
 		this.redirect = false;
 		this.disambig = false;
+		this.infoboxName = null;
 		this.namespace = Namespace.ANY;
 	}
 
@@ -130,11 +136,12 @@ public class NodeCreator extends SimpleStaxParser {
 	@Override
 	protected boolean handleElement(String element, String value) {
 		if (IntermediateXmlFileTags.page.toString().equals(element)) {
-			createNode(this.title, this.wikiId, this.redirect, this.namespace);
+			createNode(this.title, this.wikiId, this.redirect, this.namespace, this.infoboxName);
 			this.title = null;
 			this.wikiId = null;
 			this.redirect = false;
 			this.disambig = false;
+			this.infoboxName = null;
 			this.namespace = Namespace.ANY;
 		} else if (IntermediateXmlFileTags.title.toString().equals(element)) 
 			this.title = value;
@@ -146,6 +153,8 @@ public class NodeCreator extends SimpleStaxParser {
 			this.redirect = true;
 		else if (IntermediateXmlFileTags.disambig.toString().equals(element))
 			this.disambig = true;
+		else if (IntermediateXmlFileTags.infoboxName.toString().equals(element))
+			this.infoboxName = value;
 		
 		return true;
 	}
@@ -156,8 +165,9 @@ public class NodeCreator extends SimpleStaxParser {
 	 * @param wikiId The identifier in Wikipedia of a Wikipedia page.
 	 * @param redirect Whether the Wikipedia page corresponding to the node being created is a redirect.
 	 * @param namespace The namespace of the Wikipedia page.
+	 * @param infoboxName The name of the infobox of the Wikipedia page.
 	 */
-	private void createNode(String title, String wikiId, boolean redirect, int namespace) {
+	private void createNode(String title, String wikiId, boolean redirect, int namespace, String infoboxName) {
 		long nodeId = -1;
 		Page newPage = null;
 		if ( namespace == Namespace.MAIN ) {
@@ -168,9 +178,9 @@ public class NodeCreator extends SimpleStaxParser {
 			else
 				nodeId = inserter.createNode(null, NodeLabel.Article);
 			if ( geotags.containsKey(wikiId) )
-				newPage = new Article(title, language, wikiId, nodeId, redirect, geotags.get(wikiId));
+				newPage = new Article(title, language, wikiId, nodeId, redirect, geotags.get(wikiId), infoboxName);
 			else
-				newPage = new Article(title, language, wikiId, nodeId, redirect);
+				newPage = new Article(title, language, wikiId, nodeId, redirect, infoboxName);
 		}
 		else
 			if ( namespace == Namespace.CATEGORY ) {

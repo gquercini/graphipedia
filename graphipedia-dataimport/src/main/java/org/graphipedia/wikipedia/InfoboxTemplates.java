@@ -157,6 +157,7 @@ public class InfoboxTemplates  {
 
 		}
 		timer.cancel();
+		pleaseWait.stop();
 		bw.close();
 	}
 

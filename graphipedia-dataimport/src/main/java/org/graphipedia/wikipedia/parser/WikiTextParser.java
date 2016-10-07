@@ -87,11 +87,12 @@ public class WikiTextParser {
 	 * @param text The text of a Wikipedia page (the Wiki code).
 	 * @return The information extracted from the given {@code text}.
 	 */
-	public Set<Link> parse(String title, String text) {
+	public WikiTextParserResult parse(String title, String text) {
 		text = stripReferences(text);
 		Infobox infobox = (new InfoboxParser(this.it)).parse(text);
 		Introduction intro = (new IntroductionParser()).parse(text); 
-		return parseLinks(title, text, infobox, intro);
+		Set<Link> links = parseLinks(title, text, infobox, intro);
+		return  infobox == null ? new WikiTextParserResult(links, null) : new WikiTextParserResult(links, infobox.infoboxName()); 
 	}
 	
 	/**

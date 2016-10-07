@@ -49,7 +49,18 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 
 /**
- * Main class of Graphipedia.
+ * Graphipedia is a Java program designed to transform Wikipedia, a <a href="https://www.wikipedia.org">free online encylopedia</a>, 
+ * into a graph. <br>
+ * Wikipedia consists of several language editions; as of September 2016, 
+ * there are 283 active language editions.
+ * Any Wikipedia language edition consists of a set of <b>articles</b>, each describing a separate concept (e.g., )or
+ * entity
+ * 
+ * and written 
+ * in the    
+ * 
+ * 
+ * 
  * Graphipedia automatically downloads the necessary dump files of selected Wikipedia editions and imports 
  * them to a Neo4j database.
  * The data is downloaded to directory {@code ROOT_DIR}, that is created by Graphipedia itself.
