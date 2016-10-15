@@ -134,7 +134,8 @@ public class InfoboxTemplates  {
 			String currentCategory = categories.get(i);
 			String[] cats = null;
 			do {
-				cats = wiki.getCategoryMembers(currentCategory, Namespace.CATEGORY);
+                int[] ns = {Namespace.CATEGORY};
+				cats = wiki.getCategoryMembers(currentCategory, ns);
 			} while( cats == null );
 		
 			for (String cat : cats) 
@@ -144,7 +145,8 @@ public class InfoboxTemplates  {
 				}
 			String[] templates = null;
 			do {
-				templates = wiki.getCategoryMembers(currentCategory, Namespace.TEMPLATE);
+                int[] ns = {Namespace.TEMPLATE};
+				templates = wiki.getCategoryMembers(currentCategory, ns);
 			} while( templates == null ); 
 			
 			for ( String template : templates ) {
